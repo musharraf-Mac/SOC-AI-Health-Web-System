@@ -66,14 +66,14 @@ export default function RegisterPage() {
             onClick={() => setRole("PATIENT")}
             style={role === "PATIENT" ? roleBtnActive : roleBtn}
           >
-            I'm a Patient
+            I&apos;m a Patient
           </button>
           <button
             type="button"
             onClick={() => setRole("DOCTOR")}
             style={role === "DOCTOR" ? roleBtnActive : roleBtn}
           >
-            I'm a Doctor
+            I&apos;m a Doctor
           </button>
         </div>
 
