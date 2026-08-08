@@ -83,6 +83,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+		<dependency>
+    		<groupId>me.paulschwarz</groupId>
+    		<artifactId>springboot4-dotenv</artifactId>
+    		<version>5.0.1</version> <!-- Use the latest version -->
+		</dependency>
 	</dependencies>
 
 	<build>

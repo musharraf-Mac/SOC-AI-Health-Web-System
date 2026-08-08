@@ -3,6 +3,6 @@ spring:
     name: auth
   data:
     mongodb:
-      uri: mongodb://localhost:27017/t_soc_health_db
+      uri: ${MONOGDB_URI}
 server:
-  port: 8081
+  port: ${PORT}

@@ -26,6 +26,6 @@ public class configuration {
             )
             .httpBasic(basic -> basic.disable())
             .formLogin(form -> form.disable());
-        return http;
+        return http.build();
     }
 }
