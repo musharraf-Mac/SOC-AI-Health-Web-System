@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 import org.springframework.web.bind.annotation.RequestBody;
+
+import com.example.auth.dto.LoginRequest;
 import com.example.auth.dto.RegisterRequest;
 
 import com.example.auth.model.authUser;
@@ -26,6 +28,14 @@ public class authController {
             return ResponseEntity.ok(Map.of("message", "Registered successfully", "id", user.getId()));
         } catch (RuntimeException e) {
             return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
+        }
+    }
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest req) {
+        try {
+            return ResponseEntity.ok(service.login(req));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
         }
     }
 }
