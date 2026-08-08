@@ -29,8 +29,15 @@ export default function LoginPage() {
 
       if (data.role === "DOCTOR") {
         router.push("/doctor/dashboard");
-      } else {
+      } 
+      else if (data.role ==="PATIENT") {
         router.push("/patient/dashboard");
+      }
+      else if (data.role === "LAB_STAFF") {
+        router.push("/lab_staff/dashboard");
+      }
+      else {
+        setError("Invalid role received from server.");
       }
     } catch (err) {
       setError("Invalid email or password.");
