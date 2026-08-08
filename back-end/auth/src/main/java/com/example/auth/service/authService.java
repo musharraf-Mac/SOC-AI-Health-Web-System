@@ -1,11 +1,13 @@
 package com.example.auth.service;
 
-import org.springframework.stereotype.Service;
-import lombok.RequiredArgsConstructor;
-import com.example.auth.repository.authrepo;
-import com.example.auth.model.authUser;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import com.example.auth.dto.RegisterRequest;
+import com.example.auth.model.authUser;
+import com.example.auth.repository.authrepo;
+
+import lombok.RequiredArgsConstructor;
 
 
 @Service
@@ -19,7 +21,7 @@ public class authService {
             throw new RuntimeException("Email already registered");
         }
         authUser user = new authUser();
-        user.setFullName(req.getFullName());
+        user.setUsername(req.getUsername());
         user.setEmail(req.getEmail());
         user.setPassword(passwordEncoder.encode(req.getPassword()));
         user.setRole(req.getRole()); // "PATIENT" | "DOCTOR" | "LAB_ASSISTANT"
