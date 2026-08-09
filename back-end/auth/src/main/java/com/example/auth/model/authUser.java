@@ -19,5 +19,4 @@ public class authUser {
     private String password;
     private String role; // PATIENT, DOCTOR, LAB_STAFF
     private LocalDateTime createdAt = LocalDateTime.now();
-
 }

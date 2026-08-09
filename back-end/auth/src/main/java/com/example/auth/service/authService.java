@@ -1,13 +1,14 @@
 package com.example.auth.service;
 
+import java.util.Map;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.example.auth.dto.LoginRequest;
 import com.example.auth.dto.RegisterRequest;
 import com.example.auth.model.authUser;
 import com.example.auth.repository.authrepo;
-import java.util.Map;
-import com.example.auth.dto.LoginRequest;
 import com.example.auth.security.JwtUtil;
 
 import lombok.RequiredArgsConstructor;
