@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/api";
 
 
 export default function RegisterPage() {
-  
+
   const router = useRouter();
   const [role, setRole] = useState<"PATIENT" | "DOCTOR" | "LAB_STAFF">("PATIENT");
   const [form, setForm] = useState({
@@ -47,6 +47,7 @@ export default function RegisterPage() {
           role,
         }),
       });
+      alert("Registration successful! Please log in.");
       router.push("/login?registered=true");
     } catch (err) {
       setError("Registration failed. That email may already be in use.");
