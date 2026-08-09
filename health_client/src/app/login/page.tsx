@@ -20,7 +20,7 @@ export default function LoginPage() {
     try {
       const data = await apiFetch("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, role: role }),
       });
 
       // Save token + role for route protection across the app
