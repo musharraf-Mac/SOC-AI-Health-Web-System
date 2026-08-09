@@ -3,7 +3,7 @@ spring:
     name: auth
   data:
     mongodb:
-      uri: mongodb://localhost:27017/tb_soc_health_db
+      uri: mongodb://localhost:27017/t_soc_health_db
 server:
   port: ${PORT}
 jwt:

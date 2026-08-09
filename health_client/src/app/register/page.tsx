@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/api";
 
 
 export default function RegisterPage() {
-  const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:8081";
+  
   const router = useRouter();
   const [role, setRole] = useState<"PATIENT" | "DOCTOR" | "LAB_STAFF">("PATIENT");
   const [form, setForm] = useState({
@@ -38,7 +38,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await apiFetch(`${SERVER_URL}/api/auth/register`, {
+      await apiFetch("/api/auth/register", {
         method: "POST",
         body: JSON.stringify({
           fullName: form.fullName,

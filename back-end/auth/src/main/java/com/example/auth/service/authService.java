@@ -54,13 +54,13 @@ public class authService {
     }
     catch (DataAccessResourceFailureException e) {
             // This catches database connection failures
-            log.error("Database connection failed! Cannot save to soc_db", e);
-            throw new RuntimeException("Database connection failed: Cannot access soc_db", e);
+            log.error("Database connection failed! Cannot save to tb_soc_health_db", e);
+            throw new RuntimeException("Database connection failed: Cannot access tb_soc_health_db", e);
             
         } catch (DataAccessException e) {
             // This catches other database errors
             log.error("Database error while saving user", e);
-            throw new RuntimeException("Database error: Could not save user to soc_db", e);
+            throw new RuntimeException("Database error: Could not save user to tb_soc_health_db", e);
             
         } catch (Exception e) {
             log.error("Unexpected error while saving user", e);
@@ -82,8 +82,8 @@ public class authService {
         return Map.of("token", token, "role", user.getRole());
     }
     catch (DataAccessResourceFailureException e) {
-            log.error("❌ Cannot access soc_db for login", e);
-            throw new RuntimeException("Database connection failed: Cannot access soc_db");
+            log.error("Cannot access soc_db for login", e);
+            throw new RuntimeException("Database connection failed: Cannot access tb_soc_health_db", e);
 }
 }
 }

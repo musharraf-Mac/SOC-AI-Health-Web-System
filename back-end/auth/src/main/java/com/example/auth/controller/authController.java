@@ -25,7 +25,7 @@ public class authController {
     public ResponseEntity<?> register (@RequestBody RegisterRequest req) {
         try {
             authUser user = service.register(req);
-            return ResponseEntity.ok(Map.of("message", "Registered successfully", "id", user.getId()));
+            return ResponseEntity.ok(Map.of("message", "Registered successfully to database", "id", user.getId()));
         } catch (RuntimeException e) {
             return ResponseEntity.status(409).body(Map.of("error", e.getMessage()));
         }
