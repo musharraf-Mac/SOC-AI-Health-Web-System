@@ -9,4 +9,8 @@ import com.example.auth.model.authUser;
 public interface authrepo extends MongoRepository<authUser, String> {
     Optional<authUser> findByEmail(String email);
     boolean existsByEmail(String email);
+
+    default void verifyDataBaseConnection() {
+        count(); // This will throw an exception if the database connection is not established
+    }
 }

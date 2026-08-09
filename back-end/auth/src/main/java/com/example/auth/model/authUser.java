@@ -13,7 +13,7 @@ import lombok.Data;
 public class authUser {
     @Id
     private String id;
-    private String username;
+    private String fullname;
     @Indexed(unique = true)
     private String email;
     private String password;
