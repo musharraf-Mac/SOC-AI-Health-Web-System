@@ -39,7 +39,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={pageWrap}>
+    <>    
+    <div style={pageWrap}>    
+      <button
+        onClick={() => router.push("/")}
+        className="absolute top-8 left-8 flex items-center gap-2 rounded-full border border-[#E8E3D9] bg-transparent px-5 py-2.5 text-[15px] font-medium text-[#FF8A5B] transition-all duration-200 hover:border-[#FF8A5B] hover:bg-[#FFF5F0] font-sans">
+        <span className="text-base leading-none">←</span> Back
+      </button>
       <div style={card}>
         <p style={eyebrow}>Meridian Clinic</p>
         <h1 style={heading}>Welcome back</h1>
@@ -84,6 +90,7 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+    </>
   );
 }
 
@@ -96,6 +103,7 @@ const pageWrap: React.CSSProperties = {
   justifyContent: "center",
   padding: "32px",
   fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  position: "relative",
 };
 
 const card: React.CSSProperties = {
