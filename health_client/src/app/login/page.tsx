@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState<"PATIENT" | "DOCTOR" | "LAB_STAFF">("PATIENT");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -17,9 +18,9 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const data = await apiFetch("/auth/login", {
+      const data = await apiFetch("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, role: role }),
       });
 
       // Save token + role for route protection across the app
@@ -28,8 +29,15 @@ export default function LoginPage() {
 
       if (data.role === "DOCTOR") {
         router.push("/doctor/dashboard");
-      } else {
+      } 
+      else if (data.role ==="PATIENT") {
         router.push("/patient/dashboard");
+      }
+      else if (data.role === "LAB_STAFF") {
+        router.push("/lab_staff/dashboard");
+      }
+      else {
+        setError("Invalid role received from server.");
       }
     } catch (err) {
       setError("Invalid email or password.");
@@ -51,8 +59,32 @@ export default function LoginPage() {
         <h1 style={heading}>Welcome back</h1>
         <p style={subtext}>Log in to view your appointments and records.</p>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <div style={roleToggle}>
+          <button
+            type="button"
+            onClick={() => setRole("PATIENT")}
+            style={role === "PATIENT" ? roleBtnActive : roleBtn}
+          >
+            I&apos;m a Patient
+          </button>
+          <button
+            type="button"
+            onClick={() => setRole("DOCTOR")}
+            style={role === "DOCTOR" ? roleBtnActive : roleBtn}
+          >
+            I&apos;m a Doctor
+          </button>
+          <button
+            type="button"
+            onClick={() => setRole("LAB_STAFF")}
+            style={role === "LAB_STAFF" ? roleBtnActive : roleBtn}
+          >
+            I&apos;m a Lab Staff
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className = "flex flex-col gap-14px">
+          <label className= "flex flex-col gap-6px">
             <span style={fieldLabel}>Email</span>
             <input
               type="email"
@@ -183,4 +215,32 @@ const link: React.CSSProperties = {
   color: "#0B3D3A",
   fontWeight: 600,
   textDecoration: "none",
+};
+
+const roleToggle: React.CSSProperties = {
+  display: "flex",
+  background: "#F6F3EC",
+  border: "1px solid #DCD6C8",
+  borderRadius: "8px",
+  padding: "4px",
+  marginBottom: "22px",
+};
+
+const roleBtn: React.CSSProperties = {
+  flex: 1,
+  padding: "9px 12px",
+  fontSize: "13.5px",
+  fontWeight: 500,
+  color: "#4A463E",
+  background: "transparent",
+  border: "none",
+  borderRadius: "6px",
+  cursor: "pointer",
+};
+
+const roleBtnActive: React.CSSProperties = {
+  ...roleBtn,
+  background: "#0B3D3A",
+  color: "#F6F3EC",
+  fontWeight: 600,
 };

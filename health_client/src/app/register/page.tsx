@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
+
 export default function RegisterPage() {
+
   const router = useRouter();
-  const [role, setRole] = useState<"PATIENT" | "DOCTOR">("PATIENT");
+  const [role, setRole] = useState<"PATIENT" | "DOCTOR" | "LAB_STAFF">("PATIENT");
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -36,7 +38,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await apiFetch("/auth/register", {
+      await apiFetch("/api/auth/register", {
         method: "POST",
         body: JSON.stringify({
           fullName: form.fullName,
@@ -45,6 +47,7 @@ export default function RegisterPage() {
           role,
         }),
       });
+      alert("Registration successful! Please log in.");
       router.push("/login?registered=true");
     } catch (err) {
       setError("Registration failed. That email may already be in use.");
@@ -80,6 +83,13 @@ export default function RegisterPage() {
             style={role === "DOCTOR" ? roleBtnActive : roleBtn}
           >
             I&apos;m a Doctor
+          </button>
+          <button
+            type="button"
+            onClick={() => setRole("LAB_STAFF")}
+            style={role === "LAB_STAFF" ? roleBtnActive : roleBtn}
+          >
+            I&apos;m a Lab Staff
           </button>
         </div>
 

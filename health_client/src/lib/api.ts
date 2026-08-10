@@ -2,7 +2,7 @@ export async function apiFetch<T = Record<string, string>>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const response = await fetch(`http://localhost:8080${path}`, {
+  const response = await fetch(`http://localhost:8081${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
