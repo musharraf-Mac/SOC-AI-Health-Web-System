@@ -7,11 +7,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader; 
 
 import com.example.auth.dto.LoginRequest;
 import com.example.auth.dto.RegisterRequest;
 import com.example.auth.model.authUser;
 import com.example.auth.service.authService;
+import com.example.auth.security.JwtUtil;
+import com.example.auth.repository.authrepo;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +24,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class authController {
     private final authService service;
+    private final authrepo authrepo;
+    private final JwtUtil jwtUtil;
 
     @PostMapping("/register")
     public ResponseEntity<?> register (@RequestBody RegisterRequest req) {
@@ -38,4 +44,16 @@ public class authController {
             return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
         }
     }
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
+    String token = authHeader.replace("Bearer ", "");
+    String userId = jwtUtil.getUserIdFromToken(token); // extract subject claim
+    authUser user = authrepo.findById(userId)
+        .orElseThrow(() -> new RuntimeException("User not found"));
+    return ResponseEntity.ok(Map.of(
+        "fullName", user.getFullname(),
+        "email", user.getEmail(),
+        "role", user.getRole()
+    ));
+}
 }

@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.Claims;
+
 
 import java.util.Date;
 
@@ -25,4 +27,11 @@ public class JwtUtil {
                 .signWith(Keys.hmacShaKeyFor(secret.getBytes()), SignatureAlgorithm.HS256)
                 .compact();
     }
+    public String getUserIdFromToken(String token) {
+    Claims claims = Jwts.parser()
+        .setSigningKey(Keys.hmacShaKeyFor(secret.getBytes()))
+        .parseClaimsJws(token)
+        .getBody();
+    return claims.getSubject();
+}
 }
