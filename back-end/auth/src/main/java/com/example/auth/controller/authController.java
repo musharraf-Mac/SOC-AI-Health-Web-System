@@ -1,6 +1,7 @@
 package com.example.auth.controller;
 
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Slf4j
 public class authController {
     private final authService service;
     private final authrepo authrepo;
@@ -45,15 +47,43 @@ public class authController {
         }
     }
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
-    String token = authHeader.replace("Bearer ", "");
-    String userId = jwtUtil.getUserIdFromToken(token); // extract subject claim
-    authUser user = authrepo.findById(userId)
-        .orElseThrow(() -> new RuntimeException("User not found"));
-    return ResponseEntity.ok(Map.of(
-        "fullName", user.getFullname(),
-        "email", user.getEmail(),
-        "role", user.getRole()
-    ));
-}
+    public ResponseEntity<?> getCurrentUser(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        try {
+            log.info("Received request to /me endpoint");
+            
+            if (authHeader == null || authHeader.isEmpty()) {
+                log.warn("Authorization header is missing");
+                return ResponseEntity.status(401).body(Map.of("error", "Authorization header is required"));
+            }
+            
+            if (!authHeader.startsWith("Bearer ")) {
+                log.warn("Authorization header doesn't start with Bearer");
+                return ResponseEntity.status(401).body(Map.of("error", "Invalid Authorization header format. Must start with 'Bearer '"));
+            }
+
+            String token = authHeader.substring(7);
+            log.info("Token extracted: {}...", token.substring(0, Math.min(token.length(), 20)));
+            
+            if (!jwtUtil.validateToken(token)) {
+                log.warn("Invalid token provided");
+                return ResponseEntity.status(401).body(Map.of("error", "Invalid or expired token"));
+            }
+            
+            String userId = jwtUtil.getUserIdFromToken(token);
+            log.info("User ID extracted: {}", userId);
+            
+            authUser user = authrepo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+            
+            return ResponseEntity.ok(Map.of(
+                "fullName", user.getFullname(),
+                "email", user.getEmail(),
+                "role", user.getRole()
+            ));
+            
+        } catch (Exception e) {
+            log.error("Error in /me endpoint: ", e);
+            return ResponseEntity.status(401).body(Map.of("error", "Authentication failed: " + e.getMessage()));
+        }
+    }
 }

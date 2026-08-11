@@ -11,8 +11,10 @@ import org.springframework.stereotype.Component;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
+@Slf4j
 public class JwtUtil {
     @Value("${jwt.secret}")
     private String secret;
@@ -49,5 +51,17 @@ public class JwtUtil {
             .parseSignedClaims(token)
             .getPayload();
         return claims.get("role", String.class);
+    }
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token);
+            return true;
+        } catch (Exception e) {
+            log.error("Token validation failed: {}", e.getMessage());
+            return false;
+        }
     }
 }
