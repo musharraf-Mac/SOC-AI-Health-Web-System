@@ -1,5 +1,6 @@
 package com.example.auth.controller;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
@@ -46,13 +47,12 @@ public class authController {
             return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
         }
     }
-    @GetMapping("/me")
+   @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
             log.info("=== /me endpoint called ===");
             log.info("Authorization header: {}", authHeader);
             
-            // Check if Authorization header exists
             if (authHeader == null || authHeader.isEmpty()) {
                 log.warn("Authorization header is missing or empty");
                 return ResponseEntity.status(401).body(Map.of(
@@ -61,7 +61,6 @@ public class authController {
                 ));
             }
             
-            // Check if header starts with Bearer
             if (!authHeader.startsWith("Bearer ")) {
                 log.warn("Authorization header doesn't start with 'Bearer '");
                 return ResponseEntity.status(401).body(Map.of(
@@ -70,11 +69,9 @@ public class authController {
                 ));
             }
 
-            // Extract token
-            String token = authHeader.substring(7); // Remove "Bearer "
+            String token = authHeader.substring(7);
             log.info("Token extracted: {}...", token.substring(0, Math.min(token.length(), 30)));
             
-            // Validate token
             boolean isValid = jwtUtil.validateToken(token);
             log.info("Token validation result: {}", isValid);
             
@@ -86,23 +83,37 @@ public class authController {
                 ));
             }
             
-            // Extract userId from token
             String userId = jwtUtil.getUserIdFromToken(token);
             log.info("User ID extracted from token: {}", userId);
             
-            // Find user
             authUser user = authrepo.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
             
             log.info("User found: {}", user.getEmail());
             
-            // Return user info
-            return ResponseEntity.ok(Map.of(
-                "fullName", user.getFullname(),
-                "email", user.getEmail(),
-                "role", user.getRole()
-            ));
+            // DEBUG: Log all user fields
+            log.info("User fullName: '{}'", user.getFullname());
+            log.info("User email: '{}'", user.getEmail());
+            log.info("User role: '{}'", user.getRole());
             
+            // Use HashMap instead of Map.of() to handle null values
+            Map<String, Object> response = new HashMap<>();
+            
+            // Add each field with null checking
+            response.put("fullName", user.getFullname() != null ? user.getFullname() : "Unknown");
+            response.put("email", user.getEmail() != null ? user.getEmail() : "No email");
+            response.put("role", user.getRole() != null ? user.getRole() : "No role");
+            
+            log.info("Response map: {}", response);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (NullPointerException e) {
+            log.error("NullPointerException in /me endpoint: ", e);
+            return ResponseEntity.status(500).body(Map.of(
+                "error", "Internal server error",
+                "details", "A null value was encountered. Please check user data."
+            ));
         } catch (RuntimeException e) {
             log.error("Runtime error in /me endpoint: {}", e.getMessage());
             return ResponseEntity.status(401).body(Map.of(
@@ -111,56 +122,11 @@ public class authController {
             ));
         } catch (Exception e) {
             log.error("Unexpected error in /me endpoint: ", e);
-            return ResponseEntity.status(401).body(Map.of(
-                "error", "Authentication failed",
+            return ResponseEntity.status(500).body(Map.of(
+                "error", "Internal server error",
                 "details", e.getMessage() != null ? e.getMessage() : "Unknown error occurred"
             ));
         }
     }
-    @GetMapping("/debug-token")
-public ResponseEntity<?> debugToken(@RequestHeader(value = "Authorization", required = false) String authHeader) {
-    try {
-        log.info("=== DEBUG TOKEN ENDPOINT ===");
-        
-        if (authHeader == null) {
-            return ResponseEntity.ok(Map.of(
-                "message", "No Authorization header provided",
-                "headers", Map.of("Authorization", "null")
-            ));
-        }
-        
-        String token = authHeader.replace("Bearer ", "");
-        
-        // Check if token is valid
-        boolean isValid = jwtUtil.validateToken(token);
-        
-        Map<String, Object> result = Map.of(
-            "tokenPresent", true,
-            "tokenLength", token.length(),
-            "tokenPreview", token.substring(0, Math.min(token.length(), 30)) + "...",
-            "isValid", isValid
-        );
-        
-        if (isValid) {
-            String userId = jwtUtil.getUserIdFromToken(token);
-            String role = jwtUtil.getRoleFromToken(token);
-            result = Map.of(
-                "tokenPresent", true,
-                "tokenLength", token.length(),
-                "tokenPreview", token.substring(0, Math.min(token.length(), 30)) + "...",
-                "isValid", true,
-                "userId", userId,
-                "role", role
-            );
-        }
-        
-        return ResponseEntity.ok(result);
-        
-    } catch (Exception e) {
-        return ResponseEntity.status(500).body(Map.of(
-            "error", e.getMessage(),
-            "stackTrace", e.getStackTrace().toString()
-        ));
-    }
-}
+   
 }
