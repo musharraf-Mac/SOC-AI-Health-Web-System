@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function HomePage() {
   const router = useRouter();
@@ -51,7 +52,9 @@ export default function HomePage() {
             color: "#0B3D3A",
           }}
         >
-          Meridian&nbsp;Clinic
+          <Link href="/" className="text-inherit decoration-none">
+         Meridian&nbsp;Clinic
+         </Link>
         </div>
 
         <nav style={{ display: "flex", alignItems: "center", gap: "8px" }}>
