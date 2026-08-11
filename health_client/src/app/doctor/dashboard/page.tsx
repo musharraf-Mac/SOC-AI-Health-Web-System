@@ -73,7 +73,7 @@ export default function DoctorDashboard() {
     setSuccessMsg("");
     const token = localStorage.getItem("token");
     try {
-      // Prescription service endpoint — adjust path once teammate confirms it
+      // Prescription service endpoint — adjust this based on your back end @Sarmi14
       await apiFetch("/api/prescriptions", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },

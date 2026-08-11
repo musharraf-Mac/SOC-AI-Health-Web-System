@@ -31,7 +31,7 @@ export default function LoginPage() {
         router.push("/doctor/dashboard");
       } 
       else if (data.role ==="PATIENT") {
-        router.push("../patient/dashboard");
+        router.push("/patient/dashboard");
       }
       else if (data.role === "LAB_STAFF") {
         router.push("/lab_staff/dashboard");
