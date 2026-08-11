@@ -54,9 +54,9 @@ export default function LabStaffDashboard() {
     formData.append("file", file);
 
     try {
-      // Lab Report service endpoint — adjust path once teammate confirms it.
+      // Lab Report service endpoint — change based on your back end @Niroshini2002
       // Note: don't set Content-Type manually for FormData, browser sets the boundary.
-      const res = await fetch("http://localhost:8084/api/lab-reports/upload", {
+      const res = await fetch("http://localhost:8083/api/lab-reports/upload", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: formData,

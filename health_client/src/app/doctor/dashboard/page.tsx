@@ -45,7 +45,7 @@ export default function DoctorDashboard() {
         router.push("/login");
       });
 
-    // Appointment service endpoint — adjust path once teammate confirms it
+    // Needs to change path when your back end done @Sarmi14
     apiFetch<Appointment[]>("/api/appointments/doctor-view", {
       headers: { Authorization: `Bearer ${token}` },
     })
