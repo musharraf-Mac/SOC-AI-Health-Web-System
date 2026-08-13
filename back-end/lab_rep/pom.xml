@@ -11,7 +11,7 @@
 	<groupId>com.example</groupId>
 	<artifactId>lab_rep</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
+	<name>lab_rep</name>
 	<description/>
 	<url/>
 	<licenses>
@@ -77,6 +77,16 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+    		<groupId>net.sourceforge.tess4j</groupId>
+    		<artifactId>tess4j</artifactId>
+    		<version>5.11.0</version>
+		</dependency>
+		<dependency>
+    <groupId>me.paulschwarz</groupId>
+    <artifactId>spring-dotenv</artifactId>
+    <version>4.0.0</version>
+</dependency>
 	</dependencies>
 
 	<build>
