@@ -2,17 +2,19 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+	
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>4.0.7</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
+	
 	<groupId>com.example</groupId>
 	<artifactId>doc_booking</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
+	<name>doc_booking</name>
+	<description>Doctor Booking Service</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -26,9 +28,13 @@
 		<tag/>
 		<url/>
 	</scm>
+	
 	<properties>
 		<java.version>26</java.version>
+		<maven.compiler.source>26</maven.compiler.source>
+		<maven.compiler.target>26</maven.compiler.target>
 	</properties>
+	
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -79,6 +85,20 @@
 		</dependency>
 	</dependencies>
 
+	<!-- ✅ Apache Snapshot Repository for Java 26 support -->
+	<pluginRepositories>
+		<pluginRepository>
+			<id>apache-snapshots</id>
+			<url>https://repository.apache.org/snapshots</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
+
 	<build>
 		<plugins>
 			<plugin>
@@ -93,9 +113,25 @@
 					</excludes>
 				</configuration>
 			</plugin>
+			
+			<!-- ✅ FORCED: Maven Compiler Plugin with Java 26 support -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<version>4.0.0-SNAPSHOT</version>
+				<configuration>
+					<source>26</source>
+					<target>26</target>
+					<compilerArgs>
+						<arg>--enable-preview</arg>
+					</compilerArgs>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
 				<executions>
 					<execution>
 						<id>default-compile</id>
@@ -104,6 +140,11 @@
 							<goal>compile</goal>
 						</goals>
 						<configuration>
+							<source>26</source>
+							<target>26</target>
+							<compilerArgs>
+								<arg>--enable-preview</arg>
+							</compilerArgs>
 							<annotationProcessorPaths>
 								<path>
 									<groupId>org.projectlombok</groupId>
@@ -119,6 +160,11 @@
 							<goal>testCompile</goal>
 						</goals>
 						<configuration>
+							<source>26</source>
+							<target>26</target>
+							<compilerArgs>
+								<arg>--enable-preview</arg>
+							</compilerArgs>
 							<annotationProcessorPaths>
 								<path>
 									<groupId>org.projectlombok</groupId>
@@ -131,5 +177,4 @@
 			</plugin>
 		</plugins>
 	</build>
-
 </project>

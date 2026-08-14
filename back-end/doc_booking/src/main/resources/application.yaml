@@ -1,3 +1,9 @@
 spring:
   application:
     name: doc_booking
+  data:
+    mongodb:
+      uri: mongodb://localhost:27018/healthdb
+
+server:
+  port: 8082
