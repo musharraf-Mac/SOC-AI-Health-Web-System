@@ -1,3 +1,28 @@
 spring:
   application:
     name: lab_rep
+  data:
+    mongodb:
+      uri: mongodb+srv://sachithananthan89_db_user:Niro2344@cluster0.c66kysf.mongodb.net/healthdb?retryWrites=true&w=majority
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  docker:
+    compose:
+      enabled: false
+
+server:
+  port: ${PORT:8083}
+
+gemini:
+  api:
+    key: ${GEMINI_API_KEY}
+    model: gemini-flash-latest
+
+ocr:
+  tessdata:
+    path: ${TESSDATA_PATH:/opt/homebrew/share/tessdata}
+
+storage:
+  upload-dir: ./uploads
