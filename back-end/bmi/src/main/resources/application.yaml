@@ -4,8 +4,7 @@ spring:
 
 data:
   mongodb:
-    uri: ${mongodb+srv://thiyagarajanivethitha_db_user:Nive0907@cluster0.c66kysf.mongodb.net/}
-    database: soc_healthcare_db
+    uri: ${MONGODB_URI}   
 
 server:
   port: 8084
