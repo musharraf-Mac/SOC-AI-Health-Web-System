@@ -1,3 +1,10 @@
+package com.example.doctor_page;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
 @RestController
 @RequestMapping("/doctor")
 public class DoctorController {
@@ -44,4 +51,3 @@ public class DoctorController {
         return prescriptionRepo.findByPatientEmail(email);
     }
 }
-
