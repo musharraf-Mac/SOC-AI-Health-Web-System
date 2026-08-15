@@ -3,7 +3,11 @@ spring:
     name: doc_booking
   data:
     mongodb:
-      uri: mongodb://localhost:27018/healthdb
+      uri: mongodb://localhost:27017/healthdb
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 server:
   port: 8082
