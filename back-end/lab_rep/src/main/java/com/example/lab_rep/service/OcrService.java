@@ -3,7 +3,7 @@ package com.example.lab_rep.service;
 import org.springframework.stereotype.Service;
 
 @Service
-public class OCRService {
+public class OcrService {
 
     /**
      * Placeholder - returns sample text for testing

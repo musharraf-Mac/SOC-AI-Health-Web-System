@@ -21,7 +21,7 @@ public class LabReportService {
     private LabReportRepository repository;
 
     @Autowired
-    private OCRService ocrService;
+    private OcrService ocrService;
 
     @Autowired
     private GeminiService geminiService;
