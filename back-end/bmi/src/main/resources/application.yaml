@@ -2,5 +2,10 @@ spring:
   application:
     name: bmi
 
+data:
+  mongodb:
+    uri: ${mongodb+srv://thiyagarajanivethitha_db_user:Nive0907@cluster0.c66kysf.mongodb.net/}
+    database: soc_healthcare_db
+
 server:
   port: 8084
