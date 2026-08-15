@@ -82,16 +82,18 @@
             
             <!-- ✅ Java 26 Compiler Configuration (without Lombok) -->
             <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.14.1</version>
-                <configuration>
-                    <release>26</release>  
-                    <compilerArgs>
-                    <arg>--enable-preview</arg>
-                    </compilerArgs>
-                </configuration>
-            </plugin>
-        </plugins>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <version>3.14.1</version>
+    <configuration>
+        <source>26</source>      ✅
+        <target>26</target>      ✅
+        <compilerArgs>
+            <arg>--enable-preview</arg>
+        </compilerArgs>
+        <fork>true</fork>        ✅
+    </configuration>
+</plugin>
+</plugins>
     </build>
 </project>

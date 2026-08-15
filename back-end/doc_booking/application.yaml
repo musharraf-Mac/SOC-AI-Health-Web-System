@@ -1,9 +1,8 @@
 spring:
   application:
     name: doc_booking
-  data:
-    mongodb:
-      uri: mongodb+srv://shaabis71_db_user:Abi1128@cluster0.c66kysf.mongodb.net/healthdb?retryWrites=true&w=majority&appName=Cluster0
+  mongodb:
+    uri: mongodb+srv://shaabis71_db_user:Abi1128@cluster0.c66kysf.mongodb.net/healthdb?retryWrites=true&w=majority&appName=Cluster0
   servlet:
     multipart:
       max-file-size: 10MB
