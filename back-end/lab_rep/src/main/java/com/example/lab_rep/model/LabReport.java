@@ -15,7 +15,8 @@ public class LabReport {
     private String fileName;
     private String fileType;
     private long fileSize;
-    private String filePath;
+    /** MongoDB GridFS file id (stored in fs.files/fs.chunks), not a local path. */
+    private String fileId;
     private String extractedText;
     private String analysisResult;
     private String status;
@@ -29,14 +30,14 @@ public class LabReport {
 
     // Constructor for Step 1 (only basic info)
     public LabReport(String patientName, String patientEmail, String reportType, 
-                     String fileName, String fileType, long fileSize, String filePath) {
+                     String fileName, String fileType, long fileSize, String fileId) {
         this.patientName = patientName;
         this.patientEmail = patientEmail;
         this.reportType = reportType;
         this.fileName = fileName;
         this.fileType = fileType;
         this.fileSize = fileSize;
-        this.filePath = filePath;
+        this.fileId = fileId;
         this.uploadedAt = LocalDateTime.now();
         this.status = "PENDING";
     }
@@ -63,8 +64,8 @@ public class LabReport {
     public long getFileSize() { return fileSize; }
     public void setFileSize(long fileSize) { this.fileSize = fileSize; }
 
-    public String getFilePath() { return filePath; }
-    public void setFilePath(String filePath) { this.filePath = filePath; }
+    public String getFileId() { return fileId; }
+    public void setFileId(String fileId) { this.fileId = fileId; }
 
     public String getExtractedText() { return extractedText; }
     public void setExtractedText(String extractedText) { this.extractedText = extractedText; }

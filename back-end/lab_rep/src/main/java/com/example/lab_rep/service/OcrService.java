@@ -9,7 +9,7 @@ public class OcrService {
      * Placeholder - returns sample text for testing
      * Will be implemented with PDFBox in Step 2
      */
-    public String extractTextFromPDF(String pdfPath) {
+    public String extractTextFromPDF(byte[] pdfContent) {
         // For now, return sample text for testing
         return """
             Sample Lab Report Data:
