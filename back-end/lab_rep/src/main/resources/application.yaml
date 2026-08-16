@@ -3,7 +3,7 @@ spring:
     name: lab_rep
   data:
     mongodb:
-      uri: mongodb+srv://sachithananthan89_db_user:Niro2344@cluster0.c66kysf.mongodb.net/healthdb?retryWrites=true&w=majority
+      uri: ${MONGODB_URI}
   servlet:
     multipart:
       max-file-size: 20MB
@@ -13,7 +13,7 @@ spring:
       enabled: false
 
 server:
-  port: ${PORT:8083}
+  port: ${PORT}
 
 gemini:
   api:
@@ -24,5 +24,3 @@ ocr:
   tessdata:
     path: ${TESSDATA_PATH:/opt/homebrew/share/tessdata}
 
-storage:
-  upload-dir: ./uploads
