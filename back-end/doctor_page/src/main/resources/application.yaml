@@ -1,3 +1,6 @@
 spring:
   application:
     name: doctor_page
+
+server:
+  port: 8085
