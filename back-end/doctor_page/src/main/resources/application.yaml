@@ -1,6 +1,7 @@
 spring:
   application:
     name: doctor_page
-
-server:
-  port: 8085
+  data:
+    mongodb:
+      uri: ${MONGODB_URI}
+  port: ${PORT:8085}
