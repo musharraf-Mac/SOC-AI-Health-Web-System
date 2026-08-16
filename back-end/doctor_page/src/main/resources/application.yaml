@@ -1,8 +1,8 @@
 spring:
   application:
-    name:auth
+    name: doctor_page
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb+srv://<username>:<password>@cluster0.c66kysf.mongodb.net/soc_health_db?retryWrites=true&w=majority}
 server:
-  port: ${PORT:8085}
+  port: ${PORT:8086}
