@@ -197,7 +197,7 @@ public class PrescriptionService {
             writer.write("</html>");
         }
 
-        return "http://localhost:8085/doctor/webpage/"
+        return "http://localhost:8086/doctor/webpage/"
                 + fileName;
     }
 }
