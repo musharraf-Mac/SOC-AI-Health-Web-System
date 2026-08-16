@@ -55,6 +55,6 @@ public class PrescriptionService {
             writer.write("<p>Prescription: " + prescription.getPrescriptionText() + "</p>");
             writer.write("</body></html>");
         }
-        return "http://localhost:8080/doctor/webpage/" + fileName;
+        return "http://localhost:8085/doctor/webpage/" + fileName;
     }
 }

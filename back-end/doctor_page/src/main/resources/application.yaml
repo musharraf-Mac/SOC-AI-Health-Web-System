@@ -1,9 +1,8 @@
-server:
-  port: 8085
 spring:
   application:
-    name: doctor_page
-data:
+    name:auth
+  data:
     mongodb:
-      uri:https://cloud.mongodb.com/v2/6a71f0de00974829b0d9159c#/explorer/6a720013257eb31178e9e4df/soc_health_db/lab_reports/find
-      
+      uri: ${MONGODB_URI:mongodb+srv://<username>:<password>@cluster0.c66kysf.mongodb.net/soc_health_db?retryWrites=true&w=majority}
+server:
+  port: ${PORT:8085}
