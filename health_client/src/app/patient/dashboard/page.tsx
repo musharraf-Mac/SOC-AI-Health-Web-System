@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api_doc";
+import { apiFetch } from "@/lib/api";
+import {apiFetch as apiFetchDoc} from "@/lib/api_doc";
 
 // ============ Types ============
 interface UserInfo {
