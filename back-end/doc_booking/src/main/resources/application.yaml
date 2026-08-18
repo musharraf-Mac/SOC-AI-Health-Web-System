@@ -2,7 +2,7 @@ spring:
   application:
     name: doc_booking
   mongodb:
-    uri: mongodb+srv://shaabis71_db_user:Abi1128@cluster0.c66kysf.mongodb.net/soc_health_db?retryWrites=true&w=majority&appName=Cluster0&ssl=true&tls=true&tlsAllowInvalidCertificates=true&tlsInsecure=true&serverSelectionTimeoutMS=30000&connectTimeoutMS=30000&socketTimeoutMS=30000
+    uri: ${MONGODB_URI}
     database: soc_health_db
   servlet:
     multipart:
