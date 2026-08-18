@@ -1,4 +1,4 @@
-package com.example.doctor_page;
+package com.example.doctor_page.repository;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;

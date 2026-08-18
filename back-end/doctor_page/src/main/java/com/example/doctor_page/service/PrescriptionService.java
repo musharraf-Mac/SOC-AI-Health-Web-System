@@ -1,4 +1,4 @@
-package com.example.doctor_page;
+package com.example.doctor_page.service;
 
 import org.springframework.stereotype.Service;
 

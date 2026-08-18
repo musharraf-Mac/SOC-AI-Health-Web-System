@@ -1,4 +1,4 @@
-package com.example.doctor_page;
+package com.example.doctor_page.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
