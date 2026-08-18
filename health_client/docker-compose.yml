@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: frontend-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_AUTH_API_URL=http://localhost:8081/api/auth
+      - NEXT_PUBLIC_LAB_API_URL=http://localhost:8082/api/doctor
+      - NEXT_PUBLIC_BOOKING_API_URL=http://localhost:8083/api/reports
+      - NODE_ENV=production
+    
+    networks:
+      - frontend-network
+    restart: unless-stopped
+
+networks:
+  frontend-network:
+    driver: bridge
