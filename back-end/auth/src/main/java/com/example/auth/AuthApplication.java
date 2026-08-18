@@ -7,10 +7,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.springframework.data.mongodb.core.MongoTemplate;
+
 @SpringBootApplication
 public class AuthApplication {
-
-	@Autowired
+    @Autowired
 	private MongoTemplate mongoTemplate;
 	public static void main(String[] args) {
 		SpringApplication.run(AuthApplication.class, args);
@@ -26,4 +26,5 @@ public class AuthApplication {
 			System.out.println("MongoTemplate is connected to database: " + actualDbname);
 		};
 	}
+
 }
