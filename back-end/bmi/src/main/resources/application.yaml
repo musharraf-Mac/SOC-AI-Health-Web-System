@@ -5,6 +5,9 @@ spring:
 application:
   name: bmi
 
+data:
+  mongodb:
+    uri: ${MONGODB_URI}   
   data:
     mongodb:
       uri: ${MONGODB_URI}
