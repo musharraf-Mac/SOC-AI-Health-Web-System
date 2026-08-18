@@ -22,8 +22,8 @@ public class MongoConfig {
     
     @Bean
     public MongoClient mongoClient() {
-        System.out.println("✅ Connecting to MongoDB: " + mongoUri);
-        System.out.println("✅ Using database: " + db_name);
+        System.out.println("Connecting to MongoDB: " + mongoUri);
+        System.out.println("Using database: " + db_name);
         return MongoClients.create(mongoUri);
     }
     
