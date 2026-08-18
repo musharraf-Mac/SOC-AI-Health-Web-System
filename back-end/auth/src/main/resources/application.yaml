@@ -1,8 +1,7 @@
 spring:
   application:
     name: auth
-  data:
-    mongodb:
+  mongodb:
       uri: ${MONGODB_URI}
 server:
   port: ${PORT}

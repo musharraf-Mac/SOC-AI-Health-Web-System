@@ -1,246 +1,268 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
-export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState<"PATIENT" | "DOCTOR" | "LAB_STAFF">("PATIENT");
+interface BmiResult {
+  bmi: number;
+  category: string;
+  advice: string;
+  savedAt?: string;
+}
 
-  async function handleSubmit(e: React.FormEvent) {
+export default function BmiDashboardPage() {
+  const router = useRouter();
+  const [height, setHeight] = useState(""); // cm
+  const [weight, setWeight] = useState(""); // kg
+  const [age, setAge] = useState(""); // years
+  const [gender, setGender] = useState<"male" | "female" | "other" | "">("");
+  const [result, setResult] = useState<BmiResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Guard: redirect to login if no token present
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+    }
+  }, [router]);
+
+  async function handleCalculate(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setResult(null);
+
+    if (!height || !weight || !age || !gender) {
+      setError("Enter height, weight, age, and gender.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("Session expired. Please log in again.");
+      router.push("/login");
+      return;
+    }
+
     setLoading(true);
-
     try {
-      const data = await apiFetch("/api/auth/login", {
+      // Authenticated endpoint — calculates AND saves the record to MongoDB Atlas
+      const data = await apiFetch<BmiResult>("/api/bmi/save", {
         method: "POST",
-        body: JSON.stringify({ email, password, role: role }),
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          heightCm: Number(height),
+          weightKg: Number(weight),
+          age: Number(age),
+          gender,
+        }),
       });
-
-      // Save token + role for route protection across the app
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role);
-
-      if (data.role === "DOCTOR") {
-        router.push("/doctor/dashboard");
-      } 
-      else if (data.role ==="PATIENT") {
-        router.push("/patient/dashboard");
-      }
-      else if (data.role === "LAB_STAFF") {
-        router.push("/lab_staff/dashboard");
-      }
-      else {
-        setError("Invalid role received from server.");
-      }
+      setResult(data);
     } catch (err) {
-      setError("Invalid email or password.");
+      setError("Couldn't calculate/save BMI. Try again.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <>    
-    <div style={pageWrap}>    
-      <button
-        onClick={() => router.push("/")}
-        className="absolute top-8 left-8 flex items-center gap-2 rounded-full border border-[#E8E3D9] bg-transparent px-5 py-2.5 text-[15px] font-medium text-[#FF8A5B] transition-all duration-200 hover:border-[#FF8A5B] hover:bg-[#FFF5F0] font-sans">
-        <span className="text-base leading-none">←</span> Back
-      </button>
-      <div style={card}>
-        <p style={eyebrow}>Meridian Clinic</p>
-        <h1 style={heading}>Welcome back</h1>
-        <p style={subtext}>Log in to view your appointments and records.</p>
-
-        <div style={roleToggle}>
-          <button
-            type="button"
-            onClick={() => setRole("PATIENT")}
-            style={role === "PATIENT" ? roleBtnActive : roleBtn}
-          >
-            I&apos;m a Patient
-          </button>
-          <button
-            type="button"
-            onClick={() => setRole("DOCTOR")}
-            style={role === "DOCTOR" ? roleBtnActive : roleBtn}
-          >
-            I&apos;m a Doctor
-          </button>
-          <button
-            type="button"
-            onClick={() => setRole("LAB_STAFF")}
-            style={role === "LAB_STAFF" ? roleBtnActive : roleBtn}
-          >
-            I&apos;m a Lab Staff
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className = "flex flex-col gap-14px">
-          <label className= "flex flex-col gap-6px">
-            <span style={fieldLabel}>Email</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-              style={input}
-            />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <span style={fieldLabel}>Password</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Your password"
-              required
-              style={input}
-            />
-          </label>
-
-          {error && <p style={errorText}>{error}</p>}
-
-          <button type="submit" disabled={loading} style={submitBtn}>
-            {loading ? "Logging in…" : "Log in"}
-          </button>
-        </form>
-
-        <p style={footerText}>
-          Don&apos;t have an account?{" "}
-          <a href="/register" style={link}>
-            Register
-          </a>
+    <div style={page}>
+      <div style={wrap}>
+        <p style={eyebrow}>Your BMI</p>
+        <h1 style={heading}>Track your BMI</h1>
+        <p style={subtext}>
+          This record will be saved to your profile so you can view your history.
         </p>
+
+        <div style={card}>
+          <form onSubmit={handleCalculate} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <label style={fieldWrap}>
+              <span style={fieldLabel}>Height (cm)</span>
+              <input
+                type="number"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                placeholder="e.g. 170"
+                style={input}
+                min={50}
+                max={250}
+                required
+              />
+            </label>
+
+            <label style={fieldWrap}>
+              <span style={fieldLabel}>Weight (kg)</span>
+              <input
+                type="number"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                placeholder="e.g. 65"
+                style={input}
+                min={10}
+                max={400}
+                required
+              />
+            </label>
+
+            <label style={fieldWrap}>
+              <span style={fieldLabel}>Age (years)</span>
+              <input
+                type="number"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                placeholder="e.g. 28"
+                style={input}
+                min={1}
+                max={120}
+                required
+              />
+            </label>
+
+            <label style={fieldWrap}>
+              <span style={fieldLabel}>Gender</span>
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value as "male" | "female" | "other")}
+                style={input}
+                required
+              >
+                <option value="" disabled>
+                  Select gender
+                </option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+
+            {error && <p style={errorText}>{error}</p>}
+
+            <button type="submit" disabled={loading} style={submitBtn}>
+              {loading ? "Calculating…" : "Calculate & Save"}
+            </button>
+          </form>
+
+          {result && (
+            <div style={resultBox}>
+              <p style={resultBmi}>{result.bmi.toFixed(1)}</p>
+              <p style={resultCategory}>{result.category}</p>
+              <p style={resultAdvice}>{result.advice}</p>
+              <p style={savedNote}>✓ Saved to your history</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
-    </>
   );
 }
 
-// ---- styles (same token set as register page) ----
-const pageWrap: React.CSSProperties = {
+const page: React.CSSProperties = {
   minHeight: "100vh",
   background: "#F6F3EC",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: "32px",
+  padding: "56px 32px",
   fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  position: "relative",
 };
 
-const card: React.CSSProperties = {
-  width: "100%",
-  maxWidth: "420px",
-  background: "#FFFFFF",
-  border: "1px solid #DCD6C8",
-  borderRadius: "12px",
-  padding: "40px 36px",
-};
+const wrap: React.CSSProperties = { maxWidth: 480, margin: "0 auto" };
 
 const eyebrow: React.CSSProperties = {
-  fontSize: "12px",
+  fontSize: 12,
   letterSpacing: "0.1em",
   textTransform: "uppercase",
   color: "#FF8A5B",
   fontWeight: 700,
   margin: 0,
+  textAlign: "center",
 };
 
 const heading: React.CSSProperties = {
   fontFamily: "'Fraunces', Georgia, serif",
-  fontSize: "26px",
-  fontWeight: 500,
+  fontSize: 30,
   color: "#0B3D3A",
   margin: "8px 0 4px",
+  textAlign: "center",
 };
 
 const subtext: React.CSSProperties = {
-  fontSize: "14px",
   color: "#8A8577",
-  margin: "0 0 24px",
+  fontSize: 14,
+  textAlign: "center",
+  margin: "0 0 28px",
 };
 
-const fieldLabel: React.CSSProperties = {
-  fontSize: "13px",
-  fontWeight: 500,
-  color: "#1B1B18",
+const card: React.CSSProperties = {
+  background: "#FFF",
+  border: "1px solid #DCD6C8",
+  borderRadius: 10,
+  padding: 28,
 };
+
+const fieldWrap: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 6 };
+
+const fieldLabel: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: "#1B1B18" };
 
 const input: React.CSSProperties = {
   padding: "11px 13px",
-  fontSize: "14.5px",
+  fontSize: 14.5,
   border: "1px solid #DCD6C8",
-  borderRadius: "7px",
+  borderRadius: 7,
   outline: "none",
   color: "#1B1B18",
   background: "#FEFDFB",
 };
 
 const submitBtn: React.CSSProperties = {
-  marginTop: "6px",
-  padding: "13px",
-  fontSize: "15px",
+  marginTop: 4,
+  padding: 13,
+  fontSize: 15,
   fontWeight: 600,
   color: "#F6F3EC",
   background: "#FF8A5B",
   border: "none",
-  borderRadius: "8px",
+  borderRadius: 8,
   cursor: "pointer",
 };
 
-const errorText: React.CSSProperties = {
-  fontSize: "13px",
-  color: "#C0392B",
+const errorText: React.CSSProperties = { fontSize: 13, color: "#C0392B", margin: 0 };
+
+const resultBox: React.CSSProperties = {
+  marginTop: 24,
+  paddingTop: 24,
+  borderTop: "1px solid #DCD6C8",
+  textAlign: "center",
+};
+
+const resultBmi: React.CSSProperties = {
+  fontFamily: "'Fraunces', Georgia, serif",
+  fontSize: 44,
+  color: "#0B3D3A",
+  margin: 0,
+  fontWeight: 500,
+};
+
+const resultCategory: React.CSSProperties = {
+  fontSize: 14,
+  fontWeight: 600,
+  color: "#FF8A5B",
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+  margin: "4px 0 12px",
+};
+
+const resultAdvice: React.CSSProperties = {
+  fontSize: 14.5,
+  color: "#4A463E",
+  lineHeight: 1.5,
   margin: 0,
 };
 
-const footerText: React.CSSProperties = {
-  fontSize: "13.5px",
-  color: "#8A8577",
-  textAlign: "center",
-  marginTop: "22px",
-};
-
-const link: React.CSSProperties = {
+const savedNote: React.CSSProperties = {
+  fontSize: 12.5,
   color: "#0B3D3A",
   fontWeight: 600,
-  textDecoration: "none",
-};
-
-const roleToggle: React.CSSProperties = {
-  display: "flex",
-  background: "#F6F3EC",
-  border: "1px solid #DCD6C8",
-  borderRadius: "8px",
-  padding: "4px",
-  marginBottom: "22px",
-};
-
-const roleBtn: React.CSSProperties = {
-  flex: 1,
-  padding: "9px 12px",
-  fontSize: "13.5px",
-  fontWeight: 500,
-  color: "#4A463E",
-  background: "transparent",
-  border: "none",
-  borderRadius: "6px",
-  cursor: "pointer",
-};
-
-const roleBtnActive: React.CSSProperties = {
-  ...roleBtn,
-  background: "#0B3D3A",
-  color: "#F6F3EC",
-  fontWeight: 600,
+  marginTop: 10,
 };
