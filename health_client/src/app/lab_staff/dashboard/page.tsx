@@ -15,7 +15,8 @@ const CATEGORIES = ["Blood Test", "MRI", "CT Scan", "X-Ray", "Ultrasound", "ECG"
 export default function LabStaffDashboard() {
   const router = useRouter();
   const [staff, setStaff] = useState<StaffInfo | null>(null);
-  const [patientId, setPatientId] = useState("");
+  const [patientName, setPatientName] = useState("");
+  const [patientEmail, setPatientEmail] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -40,8 +41,8 @@ export default function LabStaffDashboard() {
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
-    if (!file || !patientId.trim()) {
-      setMessage({ text: "Patient ID and report file are required.", ok: false });
+    if (!file || !patientName.trim() || !patientEmail.trim()) {
+      setMessage({ text: "Patient name, email, and report file are required.", ok: false });
       return;
     }
     setSubmitting(true);
@@ -49,25 +50,31 @@ export default function LabStaffDashboard() {
 
     const token = localStorage.getItem("token");
     const formData = new FormData();
-    formData.append("patientId", patientId);
-    formData.append("category", category);
+    formData.append("patientName", patientName);
+    formData.append("patientEmail", patientEmail);
+    formData.append("reportType", category);
     formData.append("file", file);
 
     try {
-      // Lab Report service endpoint — change based on your back end @Niroshini2002
+      // Lab Report service endpoint
       // Note: don't set Content-Type manually for FormData, browser sets the boundary.
-      const res = await fetch("http://localhost:8083/api/lab-reports/upload", {
+      const res = await fetch("http://localhost:8083/api/reports/upload", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData,
       });
       if (!res.ok) throw new Error();
 
-      setMessage({ text: "Report uploaded. OCR + AI explanation in progress.", ok: true });
-      setPatientId("");
+      const data = await res.json();
+      setMessage({
+        text: `Report uploaded successfully. AI analysis is ready.`,
+        ok: true,
+      });
+      setPatientName("");
+      setPatientEmail("");
       setFile(null);
     } catch {
-      setMessage({ text: "Upload failed. Check patient ID and try again.", ok: false });
+      setMessage({ text: "Upload failed. Check the details and try again.", ok: false });
     } finally {
       setSubmitting(false);
     }
@@ -91,12 +98,24 @@ export default function LabStaffDashboard() {
 
           <form onSubmit={handleUpload} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <label style={fieldWrap}>
-              <span style={fieldLabel}>Patient ID</span>
+              <span style={fieldLabel}>Patient Name</span>
               <input
                 type="text"
-                value={patientId}
-                onChange={(e) => setPatientId(e.target.value)}
-                placeholder="e.g. 66a7928..."
+                value={patientName}
+                onChange={(e) => setPatientName(e.target.value)}
+                placeholder="e.g. John Doe"
+                style={input}
+                required
+              />
+            </label>
+
+            <label style={fieldWrap}>
+              <span style={fieldLabel}>Patient Email</span>
+              <input
+                type="email"
+                value={patientEmail}
+                onChange={(e) => setPatientEmail(e.target.value)}
+                placeholder="e.g. john@example.com"
                 style={input}
                 required
               />

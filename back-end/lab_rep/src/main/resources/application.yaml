@@ -24,5 +24,3 @@ ocr:
   tessdata:
     path: ${TESSDATA_PATH:/opt/homebrew/share/tessdata}
 
-storage:
-  upload-dir: ./uploads
