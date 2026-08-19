@@ -1,3 +1,17 @@
 spring:
-  application:
-    name: bmi
+  config:
+    import: optional:file:.env[.properties]
+
+application:
+  name: bmi
+
+data:
+  mongodb:
+    uri: ${MONGODB_URI}   
+  data:
+    mongodb:
+      uri: ${MONGODB_URI}
+      database: soc_health_system
+
+server:
+  port: 8084

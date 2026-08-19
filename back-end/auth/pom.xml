@@ -86,7 +86,7 @@
 		<dependency>
     		<groupId>me.paulschwarz</groupId>
     		<artifactId>springboot4-dotenv</artifactId>
-    		<version>5.0.1</version> <!-- Use the latest version -->
+    		<version>5.0.1</version> 
 		</dependency>
 		
 		<!--JWET Dependencies-->
