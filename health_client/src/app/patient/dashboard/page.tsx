@@ -142,7 +142,7 @@ export default function PatientDashboard() {
 
   // ============ Profile Handler ============
   const goToProfile = () => {
-    router.push("/patient/profile");
+    router.push("../../profile_page");
   };
 
   // ============ Book Appointment ============
