@@ -16,8 +16,8 @@ import java.nio.file.Files;
 import java.util.List;
 
 @RestController
-@RequestMapping("/doctor")
-@CrossOrigin(origins = "*")
+@RequestMapping("/api/doctor")
+// @CrossOrigin(origins = "*")
 public class DoctorController {
 
     @Autowired

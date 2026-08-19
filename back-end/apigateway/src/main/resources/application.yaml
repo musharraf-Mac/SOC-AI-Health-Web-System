@@ -26,11 +26,7 @@ spring:
               uri: http://localhost:8086
               predicates:
                 - Path=/api/doctor/**
-              filters:
-                - name: RequestRateLimiter
-                  args:
-                    redis-rate-limiter.replenishRate: 10
-                    redis-rate-limiter.burstCapacity: 20
+              
            
 
   data:
