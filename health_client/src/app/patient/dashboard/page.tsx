@@ -7,7 +7,7 @@ import {apiFetch as apiFetchDoc} from "@/lib/api_doc";
 
 // ============ Types ============
 interface UserInfo {
-  fullName: string;
+  fullname: string;
   email: string;
   role: string;
 }
@@ -141,7 +141,7 @@ export default function PatientDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           patientEmail,
-          patientName: user?.fullName || "Patient",
+          patientName: user?.fullname || "Patient",
           doctorEmail: selectedDoctor.email,
           bookingDate,
           bookingTime,
@@ -218,7 +218,7 @@ export default function PatientDashboard() {
             margin: "8px 0 4px",
           }}
         >
-          Welcome, {user.fullName}
+          Welcome, {user.fullname}
         </h1>
         <p style={{ color: "#8A8577", fontSize: 14, marginBottom: 24 }}>
           {user.email}

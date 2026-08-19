@@ -93,7 +93,7 @@ public class authController {
             log.info("User found: {}", user.getEmail());
             
             // DEBUG: Log all user fields
-            log.info("User fullName: '{}'", user.getFullname());
+            log.info("User fullname: '{}'", user.getFullname());
             log.info("User email: '{}'", user.getEmail());
             log.info("User role: '{}'", user.getRole());
             
@@ -101,7 +101,7 @@ public class authController {
             Map<String, Object> response = new HashMap<>();
             
             // Add each field with null checking
-            response.put("fullName", user.getFullname() != null ? user.getFullname() : "Unknown");
+            response.put("fullname", user.getFullname() != null ? user.getFullname() : "Unknown");
             response.put("email", user.getEmail() != null ? user.getEmail() : "No email");
             response.put("role", user.getRole() != null ? user.getRole() : "No role");
             
@@ -142,7 +142,7 @@ public ResponseEntity<?> logout(@RequestHeader(value = "Authorization", required
     return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
 }
 
-@DeleteMapping("/delete-account")
+@DeleteMapping("/delete")
 public ResponseEntity<?> deleteAccount(@RequestHeader(value = "Authorization", required = false) String authHeader) {
     try {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
