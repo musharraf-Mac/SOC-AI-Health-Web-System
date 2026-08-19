@@ -10,3 +10,6 @@ data:
     uri: ${MONGODB_URI}
 server:
   port: ${PORT}
+
+jwt:
+  secret: ${JWET_SECRET}
