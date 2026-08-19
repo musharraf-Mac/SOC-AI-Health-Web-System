@@ -54,6 +54,6 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -1;
+        return Ordered.HIGHEST_PRECEDENCE + 1; // Ensure this filter runs after the CORS filter
     }
 }
