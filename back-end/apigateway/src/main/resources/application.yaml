@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: apigateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: auth
+              uri: http://localhost:8081
+              predicates:
+                - Path=/api/auth/**
+            - id: doc_booking
+              uri: http://localhost:8082
+              predicates:
+                - Path=/api/doc_booking/**
+            - id: lab_rep
+              uri: http://localhost:8083
+              predicates:
+                - Path=/api/reports/**
+            - id: bmi
+              uri: http://localhost:8084
+              predicates:
+                - Path=/api/bmi/**
+            - id: doctor
+              uri: http://localhost:8086
+              predicates:
+                - Path=/api/doctor/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 20
+           
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+server:
+  port: ${PORT}
+
+jwt:
+  secret: ${JWT_SECRET}

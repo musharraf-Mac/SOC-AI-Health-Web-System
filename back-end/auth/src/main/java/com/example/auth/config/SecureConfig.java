@@ -27,7 +27,7 @@ public class SecureConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+           // .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             
             // Disable CSRF (important for stateless APIs)
             .csrf(csrf -> csrf.disable())
@@ -53,6 +53,7 @@ public class SecureConfig {
             
         return http.build();
     }
+    /* 
     String allowedOrigin = "http://localhost:3000"; // Needs to change with Real front end URL
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -67,4 +68,5 @@ public class SecureConfig {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
+    */
 }

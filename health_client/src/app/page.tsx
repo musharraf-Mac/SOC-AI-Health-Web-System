@@ -59,7 +59,7 @@ export default function HomePage() {
 
         <nav style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <NavButton onClick={() => router.push("/bmi")}>BMI Check</NavButton>
-          <NavButton onClick={() => router.push("/booking")}>
+          <NavButton onClick={() => router.push("/patient/dashboard")}>
             Book Appointment
           </NavButton>
           <span
@@ -174,7 +174,7 @@ export default function HomePage() {
           }}
         >
           <button
-            onClick={() => router.push("/booking")}
+            onClick={() => router.push("/patient/dashboard")}
             style={{
               padding: "14px 28px",
               fontSize: "15px",

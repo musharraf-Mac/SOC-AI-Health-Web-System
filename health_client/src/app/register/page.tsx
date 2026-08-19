@@ -10,7 +10,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [role, setRole] = useState<"PATIENT" | "DOCTOR" | "LAB_STAFF">("PATIENT");
   const [form, setForm] = useState({
-    fullName: "",
+    fullname: "",
     email: "",
     phoneNumber:"",
     password: "",
@@ -41,7 +41,7 @@ export default function RegisterPage() {
       await apiFetch("/api/auth/register", {
         method: "POST",
         body: JSON.stringify({
-          fullName: form.fullName,
+          fullname: form.fullname,
           email: form.email,
           password: form.password,
           role,
@@ -97,8 +97,8 @@ export default function RegisterPage() {
           <Field
             label="Full name"
             type="text"
-            value={form.fullName}
-            onChange={(v) => update("fullName", v)}
+            value={form.fullname}
+            onChange={(v) => update("fullname", v)}
             placeholder="Dr. Kamal Perera"
             required
           />
