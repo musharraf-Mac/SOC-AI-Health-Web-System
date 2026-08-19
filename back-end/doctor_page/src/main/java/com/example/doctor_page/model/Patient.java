@@ -3,6 +3,7 @@ package com.example.doctor_page.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+
 @Document(collection = "test_booked_patients")
 public class Patient {
     @Id
