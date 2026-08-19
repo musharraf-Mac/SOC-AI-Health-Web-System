@@ -152,4 +152,17 @@ public class BmiService {
                     "BMI calculation completed.";
         };
     }
+    public boolean deleteHistoryEntry(String recordId, String userId) {
+    return bmiRepository.findById(recordId)
+        .filter(record -> record.getUserId().equals(userId)) // ownership check
+        .map(record -> {
+            bmiRepository.delete(record);
+            return true;
+        })
+        .orElse(false);
+}
+
+public void deleteAllHistory(String userId) {
+    bmiRepository.deleteByUserId(userId);
+}
 }

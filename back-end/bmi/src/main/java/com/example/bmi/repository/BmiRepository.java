@@ -1,9 +1,10 @@
 package com.example.bmi.repository;
 
-import com.example.bmi.model.BmiRecord;
+import java.util.List;
+
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-import java.util.List;
+import com.example.bmi.model.BmiRecord;
 
 public interface BmiRepository
         extends MongoRepository<BmiRecord, String> {
@@ -11,4 +12,5 @@ public interface BmiRepository
     List<BmiRecord> findByUserIdOrderByCalculatedAtDesc(
             String userId
     );
+    void deleteByUserId(String userId);
 }
