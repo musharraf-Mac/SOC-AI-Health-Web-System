@@ -33,14 +33,39 @@ interface Booking {
   createdAt: string;
 }
 
-interface FileItem {
+// ⭐ Lab Report Type (from lab_rep service)
+interface LabReport {
   id: string;
+  patientName: string;
+  patientEmail: string;
+  reportType: string;
   fileId: string;
-  filename: string;
-  fileCategory: "PRESCRIPTION" | "LAB_REPORT";
-  description: string;
+  status: string;
   uploadedAt: string;
-  uploadedBy: string;
+  analysisResult?: string;
+}
+
+// ⭐ Prescription Type (from doctor service)
+interface Prescription {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  diagnosis: string;
+  medications: Medication[];
+  instructions: string;
+  prescribedDate: string;
+  expiryDate: string;
+  status: string;
+}
+
+interface Medication {
+  name: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  instructions: string;
 }
 
 export default function PatientDashboard() {
@@ -50,7 +75,8 @@ export default function PatientDashboard() {
   // ============ State ============
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [files, setFiles] = useState<FileItem[]>([]);
+  const [labReports, setLabReports] = useState<LabReport[]>([]);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [bookingDate, setBookingDate] = useState("");
   const [bookingTime, setBookingTime] = useState("");
@@ -81,38 +107,44 @@ export default function PatientDashboard() {
 
   // ============ Fetch Data ============
 
+  // ⭐ Fetch Doctors from doc_booking service
   const fetchDoctors = async () => {
     try {
       const data = await apiFetch("/api/doc_booking/doctors");
-      // const data = await res.json();
       setDoctors(data);
     } catch (error) {
       console.error("Error fetching doctors:", error);
-      setMessage("❌ Could not load doctors. Make sure backend is running.");
+      setMessage("❌ Could not load doctors.");
     }
   };
 
+  // ⭐ Fetch Bookings from doc_booking service
   const fetchBookings = async () => {
     try {
-      const data = await apiFetch(
-        `/api/doc_booking/patient/${patientEmail}/bookings`
-      );
-      // const data = await res.json();
+      const data = await apiFetch(`/api/doc_booking/patient/${patientEmail}/bookings`);
       setBookings(data);
     } catch (error) {
       console.error("Error fetching bookings:", error);
     }
   };
 
-  const fetchFiles = async () => {
+  // ⭐ Fetch Lab Reports from lab_rep service
+  const fetchLabReports = async () => {
     try {
-      const data = await apiFetch(
-        `/api/doc_booking/files/patient/${patientEmail}`
-      );
-      // const data = await res.json();
-      setFiles(data);
+      const data = await apiFetch(`/api/reports/patient/${patientEmail}`);
+      setLabReports(data);
     } catch (error) {
-      console.error("Error fetching files:", error);
+      console.error("Error fetching lab reports:", error);
+    }
+  };
+
+  // ⭐ Fetch Prescriptions from doctor service
+  const fetchPrescriptions = async () => {
+    try {
+      const data = await apiFetch(`/api/doctor/prescriptions/patient/${patientEmail}`);
+      setPrescriptions(data);
+    } catch (error) {
+      console.error("Error fetching prescriptions:", error);
     }
   };
 
@@ -120,11 +152,11 @@ export default function PatientDashboard() {
     if (patientEmail) {
       fetchDoctors();
       fetchBookings();
-      fetchFiles();
+      fetchLabReports();
+      fetchPrescriptions();
     }
   }, [patientEmail]);
 
-  
   // ============ Logout Handler ============
   const handleLogout = async () => {
     try {
@@ -169,36 +201,36 @@ export default function PatientDashboard() {
       });
 
       if (booking.tokenNumber) {
-      setMessage(`✅ Booking confirmed! Token: ${booking.tokenNumber}`);
-      fetchBookings();
-      setSelectedDoctor(null);
-      setBookingDate("");
-      setBookingTime("");
-      setActiveTab("appointments");
-    } else if (booking.error) {
-      setMessage(`${booking.error}`);
-    } else {
-      setMessage("Booking failed. Please try again.");
+        setMessage(`✅ Booking confirmed! Token: ${booking.tokenNumber}`);
+        fetchBookings();
+        setSelectedDoctor(null);
+        setBookingDate("");
+        setBookingTime("");
+        setActiveTab("appointments");
+      } else if (booking.error) {
+        setMessage(`❌ ${booking.error}`);
+      } else {
+        setMessage("❌ Booking failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Booking error:", error);
+      setMessage("❌ Booking failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Booking error:", error);
-    setMessage("Booking failed. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // ============ View & Download PDF ============
   const viewFile = (fileId: string) => {
     window.open(
-      `http://localhost:8087/api/reports/patient/${fileId}`,
+      `http://localhost:8087/api/reports/${fileId}`,
       "_blank"
     );
   };
 
   const downloadFile = (fileId: string, filename: string) => {
     const link = document.createElement("a");
-    link.href = `/api/reports/patient/${fileId}`;
+    link.href = `http://localhost:8087/api/reports/${fileId}`;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
@@ -219,7 +251,7 @@ export default function PatientDashboard() {
       }}
     >
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
-        {/* ===== Header with Buttons ===== */}
+        {/* ===== Header ===== */}
         <div
           style={{
             display: "flex",
@@ -256,15 +288,7 @@ export default function PatientDashboard() {
             </p>
           </div>
 
-          {/* ===== Right Side Buttons ===== */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            {/* Profile Button */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button
               onClick={goToProfile}
               style={{
@@ -294,7 +318,6 @@ export default function PatientDashboard() {
               👤
             </button>
 
-            {/* Logout Button */}
             <button
               onClick={handleLogout}
               style={{
@@ -323,7 +346,6 @@ export default function PatientDashboard() {
           </div>
         </div>
 
-        {/* ============================================================ */}
         {/* ===== Tabs ===== */}
         <div
           style={{
@@ -397,11 +419,10 @@ export default function PatientDashboard() {
                   border: "1px solid #DCD6C8",
                   borderRadius: 6,
                   background: "#FFF",
+                  color: "#1B1B18",
                 }}
                 onChange={(e) => {
-                  const doctor = doctors.find(
-                    (d) => d.email === e.target.value
-                  );
+                  const doctor = doctors.find((d) => d.email === e.target.value);
                   setSelectedDoctor(doctor || null);
                   setBookingDate("");
                   setBookingTime("");
@@ -422,6 +443,7 @@ export default function PatientDashboard() {
                   border: "1px solid #DCD6C8",
                   borderRadius: 6,
                   background: "#FFF",
+                  color: "#1B1B18",
                 }}
                 onChange={(e) => setBookingDate(e.target.value)}
                 value={bookingDate}
@@ -441,6 +463,7 @@ export default function PatientDashboard() {
                   border: "1px solid #DCD6C8",
                   borderRadius: 6,
                   background: "#FFF",
+                  color: "#1B1B18",
                 }}
                 onChange={(e) => setBookingTime(e.target.value)}
                 value={bookingTime}
@@ -488,7 +511,6 @@ export default function PatientDashboard() {
               </div>
             )}
 
-            {/* Doctor Availability Info */}
             {selectedDoctor && (
               <div
                 style={{
@@ -526,69 +548,49 @@ export default function PatientDashboard() {
               My Appointments
             </h3>
             {bookings.length === 0 ? (
-              <p style={{ color: "#8A8577" }}>
-                No appointments yet. Book one above!
-              </p>
+              <p style={{ color: "#8A8577" }}>No appointments yet. Book one above!</p>
             ) : (
-              <div>
-                {bookings.map((b) => (
-                  <div
-                    key={b.id}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "12px 0",
-                      borderBottom: "1px solid #EEE",
-                    }}
-                  >
+              bookings.map((b) => (
+                <div
+                  key={b.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px 0",
+                    borderBottom: "1px solid #EEE",
+                  }}
+                >
+                  <div>
+                    <strong>{b.doctorName}</strong>
+                    <p style={{ margin: 0, fontSize: 13, color: "#8A8577" }}>
+                      {b.bookingDate} at {b.bookingTime}
+                    </p>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
                     <div>
-                      <strong>{b.doctorName}</strong>
-                      <p style={{ margin: 0, fontSize: 13, color: "#8A8577" }}>
-                        {b.bookingDate} at {b.bookingTime}
-                      </p>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div>
-                        <span
-                          style={{
-                            fontWeight: "bold",
-                            color: "#0B3D3A",
-                            fontSize: 16,
-                          }}
-                        >
-                          #{b.tokenNumber}
-                        </span>
-                        <span
-                          style={{
-                            marginLeft: 12,
-                            fontSize: 12,
-                            background:
-                              b.status === "CONFIRMED"
-                                ? "#E6F4EA"
-                                : "#FDE8E8",
-                            color:
-                              b.status === "CONFIRMED" ? "#1E7E34" : "#C62828",
-                            padding: "2px 12px",
-                            borderRadius: 12,
-                          }}
-                        >
-                          {b.status}
-                        </span>
-                      </div>
-                      <p
+                      <span style={{ fontWeight: "bold", color: "#0B3D3A", fontSize: 16 }}>
+                        #{b.tokenNumber}
+                      </span>
+                      <span
                         style={{
-                          margin: "4px 0 0 0",
-                          fontSize: 11,
-                          color: "#8A8577",
+                          marginLeft: 12,
+                          fontSize: 12,
+                          background: b.status === "CONFIRMED" ? "#E6F4EA" : "#FDE8E8",
+                          color: b.status === "CONFIRMED" ? "#1E7E34" : "#C62828",
+                          padding: "2px 12px",
+                          borderRadius: 12,
                         }}
                       >
-                        {new Date(b.createdAt).toLocaleDateString()}
-                      </p>
+                        {b.status}
+                      </span>
                     </div>
+                    <p style={{ margin: "4px 0 0 0", fontSize: 11, color: "#8A8577" }}>
+                      {new Date(b.createdAt).toLocaleDateString()}
+                    </p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))
             )}
           </div>
         )}
@@ -607,71 +609,49 @@ export default function PatientDashboard() {
             <h3 style={{ margin: "0 0 16px 0", color: "#0B3D3A" }}>
               📄 My Prescriptions
             </h3>
-            {files.filter((f) => f.fileCategory === "PRESCRIPTION").length ===
-            0 ? (
-              <p style={{ color: "#8A8577" }}>
-                No prescriptions available yet.
-              </p>
+            {prescriptions.length === 0 ? (
+              <p style={{ color: "#8A8577" }}>No prescriptions available yet.</p>
             ) : (
-              files
-                .filter((f) => f.fileCategory === "PRESCRIPTION")
-                .map((file) => (
-                  <div
-                    key={file.id}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "12px 0",
-                      borderBottom: "1px solid #EEE",
-                    }}
-                  >
-                    <div>
-                      <strong>{file.filename}</strong>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: 12,
-                          color: "#8A8577",
-                        }}
-                      >
-                        {file.description} • Uploaded:{" "}
-                        {new Date(file.uploadedAt).toLocaleDateString()}
-                      </p>
-                      <p style={{ margin: 0, fontSize: 11, color: "#aaa" }}>
-                        By: {file.uploadedBy}
-                      </p>
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        onClick={() => viewFile(file.fileId)}
-                        style={{
-                          padding: "6px 16px",
-                          background: "#0B3D3A",
-                          color: "#FFF",
-                          border: "none",
-                          borderRadius: 6,
-                          cursor: "pointer",
-                        }}
-                      >
-                        👁️ View
-                      </button>
-                      <button
-                        onClick={() => downloadFile(file.fileId, file.filename)}
-                        style={{
-                          padding: "6px 16px",
-                          background: "#FF8A5B",
-                          color: "#FFF",
-                          border: "none",
-                          borderRadius: 6,
-                          cursor: "pointer",
-                        }}
-                      >
-                        ⬇️ Download PDF
-                      </button>
-                    </div>
+              prescriptions.map((p) => (
+                <div
+                  key={p.id}
+                  style={{
+                    padding: "12px 0",
+                    borderBottom: "1px solid #EEE",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <strong>{p.doctorName}</strong>
+                    <span
+                      style={{
+                        padding: "2px 12px",
+                        borderRadius: 12,
+                        fontSize: 12,
+                        background: p.status === "ACTIVE" ? "#E6F4EA" : "#FDE8E8",
+                        color: p.status === "ACTIVE" ? "#1E7E34" : "#C62828",
+                      }}
+                    >
+                      {p.status}
+                    </span>
                   </div>
-                ))
+                  <p style={{ margin: "4px 0", fontSize: 13, color: "#1B1B18" }}>
+                    <strong>Diagnosis:</strong> {p.diagnosis}
+                  </p>
+                  <p style={{ margin: "4px 0", fontSize: 13, color: "#1B1B18" }}>
+                    <strong>Medications:</strong>
+                  </p>
+                  <ul style={{ margin: "4px 0 0 0", paddingLeft: 20 }}>
+                    {p.medications.map((m, i) => (
+                      <li key={i} style={{ fontSize: 13, color: "#4A463E" }}>
+                        {m.name} - {m.dosage}, {m.frequency} for {m.duration}
+                      </li>
+                    ))}
+                  </ul>
+                  <p style={{ margin: "4px 0 0 0", fontSize: 12, color: "#8A8577" }}>
+                    Prescribed: {new Date(p.prescribedDate).toLocaleDateString()}
+                  </p>
+                </div>
+              ))
             )}
           </div>
         )}
@@ -690,70 +670,67 @@ export default function PatientDashboard() {
             <h3 style={{ margin: "0 0 16px 0", color: "#0B3D3A" }}>
               📊 My Lab Reports
             </h3>
-            {files.filter((f) => f.fileCategory === "LAB_REPORT").length === 0 ? (
-              <p style={{ color: "#8A8577" }}>
-                No lab reports available yet.
-              </p>
+            {labReports.length === 0 ? (
+              <p style={{ color: "#8A8577" }}>No lab reports available yet.</p>
             ) : (
-              files
-                .filter((f) => f.fileCategory === "LAB_REPORT")
-                .map((file) => (
-                  <div
-                    key={file.id}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "12px 0",
-                      borderBottom: "1px solid #EEE",
-                    }}
-                  >
-                    <div>
-                      <strong>{file.filename}</strong>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: 12,
-                          color: "#8A8577",
-                        }}
-                      >
-                        {file.description} • Uploaded:{" "}
-                        {new Date(file.uploadedAt).toLocaleDateString()}
-                      </p>
-                      <p style={{ margin: 0, fontSize: 11, color: "#aaa" }}>
-                        By: {file.uploadedBy}
-                      </p>
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        onClick={() => viewFile(file.fileId)}
-                        style={{
-                          padding: "6px 16px",
-                          background: "#0B3D3A",
-                          color: "#FFF",
-                          border: "none",
-                          borderRadius: 6,
-                          cursor: "pointer",
-                        }}
-                      >
-                        👁️ View
-                      </button>
-                      <button
-                        onClick={() => downloadFile(file.fileId, file.filename)}
-                        style={{
-                          padding: "6px 16px",
-                          background: "#FF8A5B",
-                          color: "#FFF",
-                          border: "none",
-                          borderRadius: 6,
-                          cursor: "pointer",
-                        }}
-                      >
-                        ⬇️ Download PDF
-                      </button>
-                    </div>
+              labReports.map((report) => (
+                <div
+                  key={report.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px 0",
+                    borderBottom: "1px solid #EEE",
+                  }}
+                >
+                  <div>
+                    <strong>{report.reportType}</strong>
+                    <p style={{ margin: 0, fontSize: 12, color: "#8A8577" }}>
+                      Uploaded: {new Date(report.uploadedAt).toLocaleDateString()}
+                    </p>
+                    <span
+                      style={{
+                        padding: "2px 12px",
+                        borderRadius: 12,
+                        fontSize: 11,
+                        background: report.status === "COMPLETED" ? "#E6F4EA" : "#FFF3E0",
+                        color: report.status === "COMPLETED" ? "#1E7E34" : "#E65100",
+                      }}
+                    >
+                      {report.status}
+                    </span>
                   </div>
-                ))
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={() => viewFile(report.fileId)}
+                      style={{
+                        padding: "6px 16px",
+                        background: "#0B3D3A",
+                        color: "#FFF",
+                        border: "none",
+                        borderRadius: 6,
+                        cursor: "pointer",
+                      }}
+                    >
+                      👁️ View
+                    </button>
+                    <button
+                      onClick={() => downloadFile(report.fileId, `${report.reportType}.pdf`)}
+                      style={{
+                        padding: "6px 16px",
+                        background: "#FF8A5B",
+                        color: "#FFF",
+                        border: "none",
+                        borderRadius: 6,
+                        cursor: "pointer",
+                      }}
+                    >
+                      ⬇️ Download PDF
+                    </button>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         )}
