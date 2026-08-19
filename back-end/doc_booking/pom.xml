@@ -37,6 +37,17 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
+        <dependency>
+    		<groupId>me.paulschwarz</groupId>
+    		<artifactId>springboot4-dotenv</artifactId>
+    		<version>5.0.1</version> <!-- Use the latest version -->
+		</dependency>
+        <dependency>
+    	    <groupId>io.github.cdimascio</groupId>
+    	    <artifactId>dotenv-java</artifactId>
+    	    <version>3.0.0</version>
+	    </dependency>
+
         <!-- ✅ Lombok removed from dependencies -->
         <dependency>
             <groupId>org.springdoc</groupId>
