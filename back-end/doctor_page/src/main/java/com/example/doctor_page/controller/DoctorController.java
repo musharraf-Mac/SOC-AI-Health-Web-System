@@ -38,7 +38,6 @@ public class DoctorController {
         return patientRepo.findAll();
     }
 
-
     // =========================================================
     // 2. Get patient by email
     // =========================================================
@@ -62,7 +61,6 @@ public class DoctorController {
 
         // Save webpage URL into prescription object
         prescription.setUrl(url);
-
 
         // -----------------------------------------------------
         // Step 2: Generate PDF

@@ -4,23 +4,33 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 
-@Document(collection = "test_booked_patients")
+@Document(collection = "bookings")
 public class Patient {
     @Id
     private String id;
-    private String name;
-    private String email;
-    private int age;
-    private String disease;
+    private String patientName;
+    private String patientEmail;
+    private String doctorName;
+    private String doctorEmail;
+    private String bookingDate;
+    private String bookingTime;
+    private String tokenNumber;
+    private String status; // PENDING, CONFIRMED, CANCELLED
+    private String createdAt;
 
     // Constructors
     public Patient() {}
 
-    public Patient(String name, String email, int age, String disease) {
-        this.name = name;
-        this.email = email;
-        this.age = age;
-        this.disease = disease;
+    public Patient(String patientName, String patientEmail, String doctorName, String doctorEmail, String bookingDate, String bookingTime, String tokenNumber, String status, String createdAt) {
+        this.patientName = patientName;
+        this.patientEmail = patientEmail;
+        this.doctorName = doctorName;
+        this.doctorEmail = doctorEmail;
+        this.bookingDate = bookingDate;
+        this.bookingTime = bookingTime;
+        this.tokenNumber = tokenNumber;
+        this.status = status;
+        this.createdAt = createdAt;
     }
 
     // Getters and Setters
@@ -32,37 +42,65 @@ public class Patient {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public String getpatientName() {
+        return patientName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setpatientName(String patientName) {
+        this.patientName = patientName;
     }
 
-    public String getEmail() {
-        return email;
+    public String getPatientEmail() {
+        return patientEmail;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setPatientEmail(String patientEmail) {
+        this.patientEmail = patientEmail;
     }
 
-    public int getAge() {
-        return age;
+    public String getDoctorName() {
+        return doctorName;
     }
-
-    public void setAge(int age) {
-        this.age = age;
+    public void setDoctorName(String doctorName) {
+        this.doctorName = doctorName;
     }
-
-    public String getDisease() {
-        return disease;
+    public String getDoctorEmail() {
+        return doctorEmail;
     }
-
-    public void setDisease(String disease) {
-        this.disease = disease;
+    public void setDoctorEmail(String doctorEmail) {
+        this.doctorEmail = doctorEmail;
     }
+    public String getBookingDate() {
+        return bookingDate;
+    }
+    public void setBookingDate(String bookingDate) {
+        this.bookingDate = bookingDate;
+    }
+    public String getBookingTime() {
+        return bookingTime;
+    }
+    public void setBookingTime(String bookingTime) {
+        this.bookingTime = bookingTime;
+    }
+    public String getTokenNumber() {
+        return tokenNumber;
+    }
+    public void setTokenNumber(String tokenNumber) {
+        this.tokenNumber = tokenNumber;
+    }
+    public String getStatus() {
+        return status;
+    }
+    public void setStatus(String status) {
+        this.status = status;
+    }
+    public String getCreatedAt() {
+        return createdAt;
+    }
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
+    }
+    
 }
 
 
