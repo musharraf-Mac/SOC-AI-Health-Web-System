@@ -4,32 +4,62 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
+// ============ Types ============
 interface DoctorInfo {
   fullName: string;
   email: string;
   role: string;
 }
 
-interface Appointment {
+interface Patient {
   id: string;
-  patientId: string;
   patientName: string;
-  tokenNumber: number;
-  scheduledTime: string;
-  status: string; // BOOKED | ARRIVED | COMPLETED
+  patientEmail: string;
+  doctorName: string;
+  doctorEmail: string;
+  bookingDate: string;
+  bookingTime: string;
+  tokenNumber: string;
+  status: string;
+  createdAt: string;
+}
+
+interface Prescription {
+  id: string;
+  doctorName: string;
+  doctorEmail: string;
+  patientName: string;
+  patientEmail: string;
+  patientAge: number;
+  disease: string;
+  prescriptionText: string;
+  url: string;
+  qrCode: string;
+  pdfPath: string;
 }
 
 export default function DoctorDashboard() {
   const router = useRouter();
   const [doctor, setDoctor] = useState<DoctorInfo | null>(null);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [selected, setSelected] = useState<Appointment | null>(null);
-  const [prescriptionText, setPrescriptionText] = useState("");
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [prescriptionForm, setPrescriptionForm] = useState({
+    patientName: "",
+    patientEmail: "",
+    patientAge: "",
+    disease: "",
+    prescriptionText: "",
+  });
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(true);
 
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+  // ============ Fetch Doctor Info ============
   useEffect(() => {
-    const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
     if (!token || role !== "DOCTOR") {
       router.push("/login");
@@ -45,140 +75,302 @@ export default function DoctorDashboard() {
         router.push("/login");
       });
 
-    // Needs to change path when your back end done @Sarmi14
-    apiFetch<Appointment[]>("/api/appointments/doctor-view", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(setAppointments)
-      .catch(() => setAppointments([]));
+    // Fetch patients (booked patients)
+    fetchPatients();
   }, [router]);
 
-  function markArrived(id: string) {
-    const token = localStorage.getItem("token");
-    apiFetch(`/api/appointments/${id}/arrived`, {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(() => {
-        setAppointments((prev) =>
-          prev.map((a) => (a.id === id ? { ...a, status: "ARRIVED" } : a))
-        );
-      })
-      .catch(() => {});
-  }
+  // ============ Fetch Patients ============
+  const fetchPatients = async () => {
+    try {
+      setLoading(true);
+      const data = await apiFetch<Patient[]>("/api/doctor/patients");
+      setPatients(data);
+    } catch (error) {
+      console.error("Error fetching patients:", error);
+      setErrorMsg("Failed to load patients.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  async function submitPrescription() {
-    if (!selected || !prescriptionText.trim()) return;
+  // ============ Fetch Prescriptions for Selected Patient ============
+  const fetchPrescriptions = async (email: string) => {
+    try {
+      const data = await apiFetch<Prescription[]>(`/api/doctor/prescriptions/${email}`);
+      setPrescriptions(data);
+    } catch (error) {
+      console.error("Error fetching prescriptions:", error);
+    }
+  };
+
+  // ============ Select Patient ============
+  const handleSelectPatient = (patient: Patient) => {
+    setSelectedPatient(patient);
+    setPrescriptionForm({
+      patientName: patient.patientName,
+      patientEmail: patient.patientEmail,
+      patientAge: "",
+      disease: "",
+      prescriptionText: "",
+    });
+    fetchPrescriptions(patient.patientEmail);
+    setSuccessMsg("");
+    setErrorMsg("");
+  };
+
+  // ============ Submit Prescription ============
+  const submitPrescription = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPatient) return;
+
     setSubmitting(true);
     setSuccessMsg("");
-    const token = localStorage.getItem("token");
+    setErrorMsg("");
+
     try {
-      // Prescription service endpoint — adjust this based on your back end @Sarmi14
-      await apiFetch("/api/prescriptions", {
+      const prescriptionData = {
+        doctorName: doctor?.fullName || "Doctor",
+        doctorEmail: doctor?.email || "",
+        patientName: prescriptionForm.patientName,
+        patientEmail: prescriptionForm.patientEmail,
+        patientAge: parseInt(prescriptionForm.patientAge) || 0,
+        disease: prescriptionForm.disease,
+        prescriptionText: prescriptionForm.prescriptionText,
+      };
+
+      const result = await apiFetch<Prescription>("/api/doctor/prescriptions", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          patientId: selected.patientId,
-          appointmentId: selected.id,
-          content: prescriptionText,
-        }),
+        body: JSON.stringify(prescriptionData),
       });
-      setSuccessMsg("Prescription saved and sent to patient.");
-      setAppointments((prev) =>
-        prev.map((a) => (a.id === selected.id ? { ...a, status: "COMPLETED" } : a))
-      );
-      setPrescriptionText("");
-      setSelected(null);
-    } catch {
-      setSuccessMsg("Failed to save prescription. Try again.");
+
+      setSuccessMsg("✅ Prescription saved successfully!");
+      setPrescriptionForm({
+        patientName: selectedPatient.patientName,
+        patientEmail: selectedPatient.patientEmail,
+        patientAge: "",
+        disease: "",
+        prescriptionText: "",
+      });
+      // Refresh prescriptions list
+      fetchPrescriptions(selectedPatient.patientEmail);
+    } catch (error) {
+      console.error("Error saving prescription:", error);
+      setErrorMsg("❌ Failed to save prescription. Please try again.");
     } finally {
       setSubmitting(false);
     }
-  }
+  };
 
-  if (!doctor) return <div style={{ padding: 40, fontFamily: "'Inter', sans-serif" }}>Loading…</div>;
+  // ============ Logout Handler ============
+  const handleLogout = async () => {
+    try {
+      await apiFetch("/api/auth/logout", {
+        method: "POST",
+      });
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      router.push("/login");
+    }
+  };
+
+  // ============ Profile Handler ============
+  const goToProfile = () => {
+    router.push("../../profile_page");
+  };
+
+  // ============ Loading State ============
+  if (!doctor) return <div style={{ padding: 40, textAlign: "center" }}>Loading…</div>;
 
   return (
     <div style={page}>
       <div style={wrap}>
-        <p style={eyebrow}>Doctor Dashboard</p>
-        <h1 style={heading}>Welcome, Dr. {doctor.fullName}</h1>
-        <p style={subtext}>{doctor.email}</p>
+        {/* ===== Header ===== */}
+        <div style={headerFlex}>
+          <div>
+            <p style={eyebrow}>Doctor Dashboard</p>
+            <h1 style={heading}>Welcome, Dr. {doctor.fullName}</h1>
+            <p style={subtext}>{doctor.email}</p>
+          </div>
+          <div style={headerButtons}>
+            {/* Profile Button */}
+            <button
+              onClick={goToProfile}
+              style={profileBtn}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#F6F3EC";
+                e.currentTarget.style.borderColor = "#0B3D3A";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#FFF";
+                e.currentTarget.style.borderColor = "#DCD6C8";
+              }}
+              title="Profile"
+            >
+              👤
+            </button>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 24, marginTop: 32 }}>
-          {/* Patient queue */}
+            {/* Logout Button */}
+            <button
+              onClick={handleLogout}
+              style={logoutBtn}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#E67A4A";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#FF8A5B";
+              }}
+            >
+              <span>🚪</span> Logout
+            </button>
+          </div>
+        </div>
+
+        {/* ===== Main Content ===== */}
+        <div style={grid}>
+          {/* ===== Left: Patient List ===== */}
           <div style={card}>
             <h2 style={cardTitle}>Today&apos;s Patients</h2>
-            {appointments.length === 0 && (
-              <p style={{ color: "#8A8577", fontSize: 14 }}>No appointments yet.</p>
+            {loading ? (
+              <p style={{ color: "#8A8577", fontSize: 14 }}>Loading patients...</p>
+            ) : patients.length === 0 ? (
+              <p style={{ color: "#8A8577", fontSize: 14 }}>No patients yet.</p>
+            ) : (
+              patients.map((p) => (
+                <div
+                  key={p.id}
+                  onClick={() => handleSelectPatient(p)}
+                  style={{
+                    ...queueItem,
+                    borderColor: selectedPatient?.id === p.id ? "#0B3D3A" : "#DCD6C8",
+                    background: selectedPatient?.id === p.id ? "#F6F3EC" : "#FFF",
+                  }}
+                >
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 600, color: "#1B1B18" }}>
+                      Token #{p.tokenNumber} — {p.patientName}
+                    </p>
+                    <p style={{ margin: "2px 0 0", fontSize: 13, color: "#8A8577" }}>
+                      {p.bookingDate} at {p.bookingTime}
+                    </p>
+                    <p style={{ margin: "2px 0 0", fontSize: 12, color: "#aaa" }}>
+                      {p.patientEmail}
+                    </p>
+                  </div>
+                  <span style={statusBadge(p.status)}>{p.status}</span>
+                </div>
+              ))
             )}
-            {appointments.map((a) => (
-              <div
-                key={a.id}
-                onClick={() => setSelected(a)}
-                style={{
-                  ...queueItem,
-                  borderColor: selected?.id === a.id ? "#0B3D3A" : "#DCD6C8",
-                }}
-              >
-                <div>
-                  <p style={{ margin: 0, fontWeight: 600, color: "#1B1B18" }}>
-                    Token #{a.tokenNumber} — {a.patientName}
-                  </p>
-                  <p style={{ margin: "2px 0 0", fontSize: 13, color: "#8A8577" }}>
-                    {a.scheduledTime}
-                  </p>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={statusBadge(a.status)}>{a.status}</span>
-                  {a.status === "BOOKED" && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        markArrived(a.id);
-                      }}
-                      style={smallBtn}
-                    >
-                      Mark Arrived
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
           </div>
 
-          {/* Prescription panel */}
+          {/* ===== Right: Prescription Panel ===== */}
           <div style={card}>
             <h2 style={cardTitle}>Write Prescription</h2>
-            {!selected ? (
+            {!selectedPatient ? (
               <p style={{ color: "#8A8577", fontSize: 14 }}>
                 Select a patient from the list to write a prescription.
               </p>
             ) : (
-              <>
+              <form onSubmit={submitPrescription}>
                 <p style={{ fontSize: 14, marginBottom: 12 }}>
-                  For <strong>{selected.patientName}</strong> (Token #{selected.tokenNumber})
+                  For <strong>{selectedPatient.patientName}</strong> (Token #{selectedPatient.tokenNumber})
                 </p>
-                <textarea
-                  value={prescriptionText}
-                  onChange={(e) => setPrescriptionText(e.target.value)}
-                  placeholder="Diagnosis, medication, dosage, instructions…"
-                  rows={8}
-                  style={textarea}
-                />
-                {successMsg && (
-                  <p style={{ fontSize: 13, color: successMsg.startsWith("Failed") ? "#C0392B" : "#0B3D3A", marginTop: 8 }}>
-                    {successMsg}
-                  </p>
-                )}
+
+                <div style={formRow}>
+                  <label style={label}>Patient Name</label>
+                  <input
+                    type="text"
+                    value={prescriptionForm.patientName}
+                    onChange={(e) => setPrescriptionForm({ ...prescriptionForm, patientName: e.target.value })}
+                    style={input}
+                    required
+                  />
+                </div>
+
+                <div style={formRow}>
+                  <label style={label}>Patient Email</label>
+                  <input
+                    type="email"
+                    value={prescriptionForm.patientEmail}
+                    onChange={(e) => setPrescriptionForm({ ...prescriptionForm, patientEmail: e.target.value })}
+                    style={input}
+                    required
+                  />
+                </div>
+
+                <div style={formRow}>
+                  <label style={label}>Patient Age</label>
+                  <input
+                    type="number"
+                    value={prescriptionForm.patientAge}
+                    onChange={(e) => setPrescriptionForm({ ...prescriptionForm, patientAge: e.target.value })}
+                    style={input}
+                    placeholder="e.g., 30"
+                  />
+                </div>
+
+                <div style={formRow}>
+                  <label style={label}>Disease / Condition</label>
+                  <input
+                    type="text"
+                    value={prescriptionForm.disease}
+                    onChange={(e) => setPrescriptionForm({ ...prescriptionForm, disease: e.target.value })}
+                    style={input}
+                    placeholder="e.g., Hypertension"
+                  />
+                </div>
+
+                <div style={formRow}>
+                  <label style={label}>Prescription Details</label>
+                  <textarea
+                    value={prescriptionForm.prescriptionText}
+                    onChange={(e) => setPrescriptionForm({ ...prescriptionForm, prescriptionText: e.target.value })}
+                    placeholder="Medication, dosage, frequency, duration, instructions…"
+                    rows={6}
+                    style={textarea}
+                    required
+                  />
+                </div>
+
+                {successMsg && <p style={successStyle}>{successMsg}</p>}
+                {errorMsg && <p style={errorStyle}>{errorMsg}</p>}
+
                 <button
-                  onClick={submitPrescription}
-                  disabled={submitting || !prescriptionText.trim()}
+                  type="submit"
+                  disabled={submitting}
                   style={submitBtn}
                 >
-                  {submitting ? "Saving…" : "Save & Send to Patient"}
+                  {submitting ? "Saving…" : "💊 Save & Send to Patient"}
                 </button>
-              </>
+              </form>
+            )}
+
+            {/* ===== Previous Prescriptions ===== */}
+            {selectedPatient && prescriptions.length > 0 && (
+              <div style={{ marginTop: 24, borderTop: "1px solid #DCD6C8", paddingTop: 16 }}>
+                <h3 style={{ fontSize: 15, color: "#0B3D3A", marginBottom: 12 }}>
+                  Previous Prescriptions
+                </h3>
+                {prescriptions.map((p) => (
+                  <div key={p.id} style={{ ...queueItem, borderColor: "#E8E3D9", padding: "10px 12px" }}>
+                    <div>
+                      <p style={{ margin: 0, fontWeight: 500, fontSize: 13, color: "#1B1B18" }}>
+                        {p.disease}
+                      </p>
+                      <p style={{ margin: "2px 0 0", fontSize: 12, color: "#8A8577" }}>
+                        {p.prescriptionText.substring(0, 60)}...
+                      </p>
+                    </div>
+                    {p.url && (
+                      <a href={p.url} target="_blank" rel="noopener noreferrer" style={viewLink}>
+                        View
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -187,24 +379,28 @@ export default function DoctorDashboard() {
   );
 }
 
+// ============ Helper Functions ============
 function statusBadge(status: string): React.CSSProperties {
   const colors: Record<string, string> = {
     BOOKED: "#8A8577",
+    CONFIRMED: "#0B3D3A",
     ARRIVED: "#FF8A5B",
-    COMPLETED: "#0B3D3A",
+    COMPLETED: "#1E7E34",
+    CANCELLED: "#C0392B",
   };
   return {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 700,
     letterSpacing: "0.05em",
     textTransform: "uppercase",
     color: "#FFF",
     background: colors[status] || "#8A8577",
-    padding: "3px 8px",
+    padding: "4px 10px",
     borderRadius: 4,
   };
 }
 
+// ============ Styles ============
 const page: React.CSSProperties = {
   minHeight: "100vh",
   background: "#F6F3EC",
@@ -213,6 +409,49 @@ const page: React.CSSProperties = {
 };
 
 const wrap: React.CSSProperties = { maxWidth: 960, margin: "0 auto" };
+
+const headerFlex: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: 24,
+};
+
+const headerButtons: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+};
+
+const profileBtn: React.CSSProperties = {
+  width: 44,
+  height: 44,
+  borderRadius: "50%",
+  background: "#FFF",
+  border: "2px solid #DCD6C8",
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 20,
+  transition: "all 0.2s",
+  padding: 0,
+};
+
+const logoutBtn: React.CSSProperties = {
+  padding: "10px 20px",
+  borderRadius: 8,
+  background: "#FF8A5B",
+  color: "#FFF",
+  border: "none",
+  cursor: "pointer",
+  fontSize: 14,
+  fontWeight: 600,
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  transition: "background 0.2s",
+};
 
 const eyebrow: React.CSSProperties = {
   fontSize: 12,
@@ -231,6 +470,12 @@ const heading: React.CSSProperties = {
 };
 
 const subtext: React.CSSProperties = { color: "#8A8577", fontSize: 14, margin: 0 };
+
+const grid: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1.2fr",
+  gap: 24,
+};
 
 const card: React.CSSProperties = {
   background: "#FFF",
@@ -255,36 +500,72 @@ const queueItem: React.CSSProperties = {
   borderRadius: 8,
   marginBottom: 10,
   cursor: "pointer",
+  transition: "all 0.2s",
 };
 
-const smallBtn: React.CSSProperties = {
-  fontSize: 12,
-  padding: "5px 10px",
-  border: "1px solid #0B3D3A",
-  background: "transparent",
-  color: "#0B3D3A",
-  borderRadius: 5,
-  cursor: "pointer",
+const formRow: React.CSSProperties = {
+  marginBottom: 12,
+};
+
+const label: React.CSSProperties = {
+  display: "block",
+  fontSize: 13,
+  fontWeight: 500,
+  color: "#1B1B18",
+  marginBottom: 4,
+};
+
+const input: React.CSSProperties = {
+  width: "100%",
+  padding: "10px 12px",
+  fontSize: 14,
+  border: "1px solid #DCD6C8",
+  borderRadius: 6,
+  background: "#FEFDFB",
+  fontFamily: "inherit",
 };
 
 const textarea: React.CSSProperties = {
   width: "100%",
-  padding: 12,
+  padding: "10px 12px",
   fontSize: 14,
   border: "1px solid #DCD6C8",
-  borderRadius: 7,
+  borderRadius: 6,
   resize: "vertical",
   fontFamily: "inherit",
+  background: "#FEFDFB",
 };
 
 const submitBtn: React.CSSProperties = {
-  marginTop: 14,
+  width: "100%",
   padding: "12px 20px",
   fontSize: 14.5,
   fontWeight: 600,
   color: "#F6F3EC",
-  background: "#FF8A5B",
+  background: "#0B3D3A",
   border: "none",
   borderRadius: 8,
   cursor: "pointer",
+  transition: "background 0.2s",
+};
+
+const viewLink: React.CSSProperties = {
+  padding: "4px 12px",
+  fontSize: 12,
+  color: "#FF8A5B",
+  textDecoration: "none",
+  border: "1px solid #FF8A5B",
+  borderRadius: 4,
+};
+
+const successStyle: React.CSSProperties = {
+  color: "#1E7E34",
+  fontSize: 13,
+  marginTop: 8,
+};
+
+const errorStyle: React.CSSProperties = {
+  color: "#C0392B",
+  fontSize: 13,
+  marginTop: 8,
 };
