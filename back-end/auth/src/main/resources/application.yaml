@@ -3,8 +3,7 @@ spring:
     name: auth
   data:
     mongodb:
-      uri: ${MONGODB_URI}
-      database: ${DATABASE}
+  uri: ${MONGODB_URI}
 server:
   port: ${PORT}
 jwt:
