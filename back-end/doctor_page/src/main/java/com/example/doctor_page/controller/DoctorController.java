@@ -42,24 +42,32 @@ public class DoctorController {
     // =========================================================
     // 2. Get patient by email
     // =========================================================
-   @GetMapping("/patients/{patientEmail}")
-public ResponseEntity<?> getPatient(@PathVariable String patientEmail) {
+    @GetMapping("/patients/{patientEmail}")
+    public ResponseEntity<?> getPatientsByEmail(@PathVariable String patientEmail) {
     try {
-        Patient patient = patientRepo.findByPatientEmail(patientEmail);
+        System.out.println("Searching for patients with email: " + patientEmail);
         
-        // Check if patient exists
-        if (patient == null) {
+        // Returns List of patients with this email
+        List<Patient> patients = patientRepo.findByPatientEmail(patientEmail);
+        
+        if (patients.isEmpty()) {
+            System.out.println("No patients found with email: " + patientEmail);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body("Patient not found with email: " + patientEmail);
+                .body("No patients found with email: " + patientEmail);
         }
         
-        return ResponseEntity.ok(patient);
+        System.out.println("Found " + patients.size() + " patients with email: " + patientEmail);
+        
+        // ⭐ Return ALL patients with that email (just like /patients endpoint)
+        return ResponseEntity.ok(patients);
+        
     } catch (Exception e) {
+        System.err.println("Error fetching patients: " + e.getMessage());
+        e.printStackTrace();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body("Error fetching patient: " + e.getMessage());
+            .body("Error fetching patients: " + e.getMessage());
     }
 }
-
 
     // =========================================================
     // 3. Save prescription + generate Webpage + PDF + QR
@@ -130,11 +138,8 @@ public ResponseEntity<?> getPatient(@PathVariable String patientEmail) {
         if (!file.exists()) {
             return ResponseEntity.notFound().build();
         }
-
-
         // Read HTML file
         String content = Files.readString(file.toPath());
-
 
         // Return HTML webpage
         return ResponseEntity.ok(content);
