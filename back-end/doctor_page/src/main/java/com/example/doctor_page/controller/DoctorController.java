@@ -1,6 +1,7 @@
 package com.example.doctor_page.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -41,10 +42,23 @@ public class DoctorController {
     // =========================================================
     // 2. Get patient by email
     // =========================================================
-    @GetMapping("/patients/{email}")
-    public Patient getPatient(@PathVariable String email) {
-        return patientRepo.findByEmail(email);
+   @GetMapping("/patients/{patientEmail}")
+public ResponseEntity<?> getPatient(@PathVariable String patientEmail) {
+    try {
+        Patient patient = patientRepo.findByPatientEmail(patientEmail);
+        
+        // Check if patient exists
+        if (patient == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body("Patient not found with email: " + patientEmail);
+        }
+        
+        return ResponseEntity.ok(patient);
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body("Error fetching patient: " + e.getMessage());
     }
+}
 
 
     // =========================================================
@@ -90,11 +104,11 @@ public class DoctorController {
     // =========================================================
     // 4. Retrieve prescriptions by patient email
     // =========================================================
-    @GetMapping("/prescriptions/{email}")
+    @GetMapping("/prescriptions/{patientEmail}")
     public List<Prescription> getPrescriptions(
-            @PathVariable String email) {
+            @PathVariable String patientEmail) {
 
-        return prescriptionRepo.findByPatientEmail(email);
+        return prescriptionRepo.findByPatientEmail(patientEmail);
     }
 
 

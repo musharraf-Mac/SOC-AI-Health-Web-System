@@ -9,5 +9,5 @@ import com.example.doctor_page.model.Prescription;
 
 @Repository
 public interface PrescriptionRepository extends MongoRepository<Prescription, String> {
-    List<Prescription> findByPatientEmail(String email);
+    List<Prescription> findByPatientEmail(String patientEmail);
 }

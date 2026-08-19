@@ -100,7 +100,6 @@ public class Patient {
     public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
     }
-    
 }
 
 
