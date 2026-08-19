@@ -1,20 +1,24 @@
 package com.example.doc_booking.controller;
 
-import com.example.doc_booking.model.FileStorage;
-import com.example.doc_booking.service.FileStorageService;
-import org.springframework.data.mongodb.gridfs.GridFsResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.mongodb.gridfs.GridFsResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.doc_booking.model.FileStorage;
+import com.example.doc_booking.service.FileStorageService;
+
 @RestController
 @RequestMapping("/api/doc_booking/files")
-@CrossOrigin(origins = "*")
+// @CrossOrigin(origins = "*")
 public class FileController {
     
     private final FileStorageService fileStorageService;

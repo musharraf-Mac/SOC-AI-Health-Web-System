@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 
-
 // ============ Types ============
 interface UserInfo {
   fullname: string;
@@ -44,7 +43,6 @@ interface FileItem {
   uploadedBy: string;
 }
 
-// @Abisha-2002 This page for modify it your port is 8082
 export default function PatientDashboard() {
   const router = useRouter();
   const [user, setUser] = useState<UserInfo | null>(null);
@@ -82,18 +80,11 @@ export default function PatientDashboard() {
   }, [router]);
 
   // ============ Fetch Data ============
-  useEffect(() => {
-    if (patientEmail) {
-      fetchDoctors();
-      fetchBookings();
-      fetchFiles();
-    }
-  }, [patientEmail]);
 
   const fetchDoctors = async () => {
     try {
-      const res = await fetch("http://localhost:8082/api/doc_booking/doctors");
-      const data = await res.json();
+      const data = await apiFetch("/api/doc_booking/doctors");
+      // const data = await res.json();
       setDoctors(data);
     } catch (error) {
       console.error("Error fetching doctors:", error);
@@ -103,10 +94,10 @@ export default function PatientDashboard() {
 
   const fetchBookings = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:8082/api/doc_booking/patient/${patientEmail}/bookings`
+      const data = await apiFetch(
+        `/api/doc_booking/patient/${patientEmail}/bookings`
       );
-      const data = await res.json();
+      // const data = await res.json();
       setBookings(data);
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -115,14 +106,43 @@ export default function PatientDashboard() {
 
   const fetchFiles = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:8082/api/doc_booking/files/patient/${patientEmail}`
+      const data = await apiFetch(
+        `/api/doc_booking/files/patient/${patientEmail}`
       );
-      const data = await res.json();
+      // const data = await res.json();
       setFiles(data);
     } catch (error) {
       console.error("Error fetching files:", error);
     }
+  };
+
+  useEffect(() => {
+    if (patientEmail) {
+      fetchDoctors();
+      fetchBookings();
+      fetchFiles();
+    }
+  }, [patientEmail]);
+
+  
+  // ============ Logout Handler ============
+  const handleLogout = async () => {
+    try {
+      await apiFetch("/api/auth/logout", {
+        method: "POST",
+      });
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      router.push("/login");
+    }
+  };
+
+  // ============ Profile Handler ============
+  const goToProfile = () => {
+    router.push("/patient/profile");
   };
 
   // ============ Book Appointment ============
@@ -136,7 +156,7 @@ export default function PatientDashboard() {
     setMessage("");
 
     try {
-      const res = await fetch("http://localhost:8082/api/doc_booking/book", {
+      const booking = await apiFetch("/api/doc_booking/book", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -148,36 +168,37 @@ export default function PatientDashboard() {
         }),
       });
 
-      if (res.ok) {
-        const booking = await res.json();
-        setMessage(`✅ Booking confirmed! Token: ${booking.tokenNumber}`);
-        fetchBookings();
-        setSelectedDoctor(null);
-        setBookingDate("");
-        setBookingTime("");
-        setActiveTab("appointments");
-      } else {
-        const error = await res.text();
-        setMessage(`❌ ${error}`);
-      }
-    } catch (error) {
-      setMessage("❌ Booking failed. Please try again.");
-    } finally {
-      setLoading(false);
+      if (booking.tokenNumber) {
+      setMessage(`✅ Booking confirmed! Token: ${booking.tokenNumber}`);
+      fetchBookings();
+      setSelectedDoctor(null);
+      setBookingDate("");
+      setBookingTime("");
+      setActiveTab("appointments");
+    } else if (booking.error) {
+      setMessage(`${booking.error}`);
+    } else {
+      setMessage("Booking failed. Please try again.");
     }
-  };
+  } catch (error) {
+    console.error("Booking error:", error);
+    setMessage("Booking failed. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ============ View & Download PDF ============
   const viewFile = (fileId: string) => {
     window.open(
-      `http://localhost:8082/api/doc_booking/files/${fileId}/view`,
+      `http://localhost:8087/api/reports/patient/${fileId}`,
       "_blank"
     );
   };
 
   const downloadFile = (fileId: string, filename: string) => {
     const link = document.createElement("a");
-    link.href = `http://localhost:8082/api/doc_booking/files/${fileId}/view`;
+    link.href = `/api/reports/patient/${fileId}`;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
@@ -198,31 +219,109 @@ export default function PatientDashboard() {
       }}
     >
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
-        {/* ===== Header ===== */}
-        <p
+        {/* ===== Header with Buttons ===== */}
+        <div
           style={{
-            fontSize: 12,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "#FF8A5B",
-            fontWeight: 700,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 16,
           }}
         >
-          Patient Dashboard
-        </p>
-        <h1
-          style={{
-            fontFamily: "'Fraunces', Georgia, serif",
-            fontSize: 32,
-            color: "#0B3D3A",
-            margin: "8px 0 4px",
-          }}
-        >
-          Welcome, {user.fullname}
-        </h1>
-        <p style={{ color: "#8A8577", fontSize: 14, marginBottom: 24 }}>
-          {user.email}
-        </p>
+          <div>
+            <p
+              style={{
+                fontSize: 12,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "#FF8A5B",
+                fontWeight: 700,
+                margin: 0,
+              }}
+            >
+              Patient Dashboard
+            </p>
+            <h1
+              style={{
+                fontFamily: "'Fraunces', Georgia, serif",
+                fontSize: 32,
+                color: "#0B3D3A",
+                margin: "8px 0 4px",
+              }}
+            >
+              Welcome, {user.fullname}
+            </h1>
+            <p style={{ color: "#8A8577", fontSize: 14, margin: 0 }}>
+              {user.email}
+            </p>
+          </div>
+
+          {/* ===== Right Side Buttons ===== */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            {/* Profile Button */}
+            <button
+              onClick={goToProfile}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                background: "#FFF",
+                border: "2px solid #DCD6C8",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 20,
+                transition: "all 0.2s",
+                padding: 0,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#F6F3EC";
+                e.currentTarget.style.borderColor = "#0B3D3A";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#FFF";
+                e.currentTarget.style.borderColor = "#DCD6C8";
+              }}
+              title="Profile"
+            >
+              👤
+            </button>
+
+            {/* Logout Button */}
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: "10px 20px",
+                borderRadius: 8,
+                background: "#FF8A5B",
+                color: "#FFF",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 14,
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                transition: "background 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#E67A4A";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#FF8A5B";
+              }}
+            >
+              <span>🚪</span> Logout
+            </button>
+          </div>
+        </div>
 
         {/* ============================================================ */}
         {/* ===== Tabs ===== */}
@@ -252,6 +351,17 @@ export default function PatientDashboard() {
                 cursor: "pointer",
                 fontWeight: 500,
                 fontSize: 13,
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                if (activeTab !== tab.key) {
+                  e.currentTarget.style.background = "#F6F3EC";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== tab.key) {
+                  e.currentTarget.style.background = "#FFF";
+                }
               }}
             >
               {tab.label}
