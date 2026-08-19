@@ -7,11 +7,6 @@ application:
 
 data:
   mongodb:
-    uri: ${MONGODB_URI}   
-  data:
-    mongodb:
-      uri: ${MONGODB_URI}
-      database: soc_health_system
-
+    uri: ${MONGODB_URI}
 server:
-  port: 8084
+  port: ${PORT}
