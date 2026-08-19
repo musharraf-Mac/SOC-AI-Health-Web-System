@@ -289,6 +289,22 @@ export default function PatientDashboard() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+
+            <button
+                onClick={() => router.push("../patient/bmi")}
+                style={bmiBtn}
+                onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#0B3D3A";
+                e.currentTarget.style.color = "#FFF";
+             }}
+                onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#FFF";
+                e.currentTarget.style.color = "#0B3D3A";
+    }}
+    title="BMI Calculator"
+  >
+    <span>📊</span> BMI
+  </button>
             <button
               onClick={goToProfile}
               style={{
@@ -734,7 +750,24 @@ export default function PatientDashboard() {
             )}
           </div>
         )}
+        
       </div>
+      
     </div>
   );
 }
+
+const bmiBtn: React.CSSProperties = {
+  padding: "10px 18px",
+  borderRadius: 8,
+  background: "#FFF",
+  color: "#0B3D3A",
+  border: "2px solid #0B3D3A",
+  cursor: "pointer",
+  fontSize: 14,
+  fontWeight: 600,
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  transition: "all 0.2s",
+};
