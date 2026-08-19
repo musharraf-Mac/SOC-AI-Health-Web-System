@@ -16,80 +16,116 @@ interface BmiHistoryEntry {
   category: string;
   heightCm: number;
   weightKg: number;
+  age: number;
+  gender: string;
   recordedAt: string;
 }
 
 export default function BmiPatientPage() {
   const router = useRouter();
+  
+  // ⭐ ALL STATE VARIABLES DECLARED HERE
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
+  const [age, setAge] = useState("");        // ✅ Now defined
+  const [gender, setGender] = useState("");   // ✅ Now defined
   const [result, setResult] = useState<BmiResult | null>(null);
   const [history, setHistory] = useState<BmiHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
+
+  // ============ Check Auth ============
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
     if (!token || role !== "PATIENT") {
       router.push("/login");
       return;
     }
-    loadHistory(token);
+    loadHistory();
   }, [router]);
 
-  function loadHistory(token: string) {
-    apiFetch<BmiHistoryEntry[]>("/api/bmi/history", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(setHistory)
-      .catch(() => setHistory([]));
-  }
+  // ============ Load History ============
+  const loadHistory = async () => {
+    try {
+      const data = await apiFetch<BmiHistoryEntry[]>("/api/bmi/history");
+      setHistory(data);
+    } catch (error) {
+      console.error("Error loading BMI history:", error);
+      setHistory([]);
+    }
+  };
 
-  async function handleCalculate(e: React.FormEvent) {
+  // ============ Calculate BMI ============
+  const handleCalculate = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setResult(null);
 
-    if (!height || !weight) {
-      setError("Enter both height and weight.");
+    if (!height || !weight || !age || !gender) {
+      setError("Please fill in all fields.");
       return;
     }
 
     setLoading(true);
-    const token = localStorage.getItem("token")!;
+
     try {
-      // Authenticated endpoint — backend saves this under the user's email/id
-      // and updates their "latest BMI" field.
-      const data = await apiFetch<BmiResult>("/api/bmi/calculate-and-save", {
+      const data = await apiFetch<BmiResult>("/api/bmi/calculate/save", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          heightCm: Number(height),
-          weightKg: Number(weight),
+          height: Number(height),
+          weight: Number(weight),
+          age: Number(age),
+          gender: gender,
         }),
       });
+
       setResult(data);
-      loadHistory(token); // refresh history after saving
-    } catch {
-      setError("Couldn't calculate BMI. Try again.");
+      loadHistory(); // Refresh history after saving
+
+      // Clear form
+      setHeight("");
+      setWeight("");
+      setAge("");
+      setGender("");
+
+    } catch (error) {
+      console.error("BMI calculation error:", error);
+      setError("Couldn't calculate BMI. Please try again.");
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  const getBmiColor = (category: string) => {
+    const colors: Record<string, string> = {
+      "Underweight": "#FF8A5B",
+      "Normal weight": "#1E7E34",
+      "Overweight": "#FFC107",
+      "Obese": "#C0392B",
+    };
+    return colors[category] || "#0B3D3A";
+  };
 
   return (
     <div style={page}>
+      {/* Back Button */}
+      <button onClick={() => router.push("/patient/dashboard")} style={backBtn}>
+        ← Back to Dashboard
+      </button>
+
       <div style={wrap}>
         <p style={eyebrow}>Your BMI Tracker</p>
         <h1 style={heading}>Check &amp; track your BMI</h1>
         <p style={subtext}>This entry will be saved to your health profile.</p>
 
         <div style={grid}>
-          {/* Calculator */}
+          {/* ===== Calculator ===== */}
           <div style={card}>
             <h2 style={cardTitle}>New Entry</h2>
             <form onSubmit={handleCalculate} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* Height */}
               <label style={fieldWrap}>
                 <span style={fieldLabel}>Height (cm)</span>
                 <input
@@ -104,6 +140,7 @@ export default function BmiPatientPage() {
                 />
               </label>
 
+              {/* Weight */}
               <label style={fieldWrap}>
                 <span style={fieldLabel}>Weight (kg)</span>
                 <input
@@ -112,10 +149,41 @@ export default function BmiPatientPage() {
                   onChange={(e) => setWeight(e.target.value)}
                   placeholder="e.g. 65"
                   style={input}
-                  min={10}
-                  max={400}
+                  min={2}
+                  max={300}
                   required
                 />
+              </label>
+
+              {/* Age */}
+              <label style={fieldWrap}>
+                <span style={fieldLabel}>Age (Years)</span>
+                <input
+                  type="number"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  placeholder="e.g. 30"
+                  style={input}
+                  min={1}
+                  max={120}
+                  required
+                />
+              </label>
+
+              {/* Gender */}
+              <label style={fieldWrap}>
+                <span style={fieldLabel}>Gender</span>
+                <select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                  style={input}
+                  required
+                >
+                  <option value="">Select</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
               </label>
 
               {error && <p style={errorText}>{error}</p>}
@@ -125,16 +193,21 @@ export default function BmiPatientPage() {
               </button>
             </form>
 
+            {/* ===== Result ===== */}
             {result && (
               <div style={resultBox}>
-                <p style={resultBmi}>{result.bmi.toFixed(1)}</p>
-                <p style={resultCategory}>{result.category}</p>
+                <p style={{ ...resultBmi, color: getBmiColor(result.category) }}>
+                  {result.bmi.toFixed(1)}
+                </p>
+                <p style={{ ...resultCategory, color: getBmiColor(result.category) }}>
+                  {result.category}
+                </p>
                 <p style={resultAdvice}>{result.advice}</p>
               </div>
             )}
           </div>
 
-          {/* History */}
+          {/* ===== History ===== */}
           <div style={card}>
             <h2 style={cardTitle}>History</h2>
             {history.length === 0 ? (
@@ -150,8 +223,11 @@ export default function BmiPatientPage() {
                         BMI {h.bmi.toFixed(1)} — {h.category}
                       </p>
                       <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "#8A8577" }}>
-                        {h.heightCm}cm · {h.weightKg}kg ·{" "}
-                        {new Date(h.recordedAt).toLocaleDateString()}
+                        {h.heightCm}cm · {h.weightKg}kg · Age {h.age} · {h.gender}
+                      </p>
+                      <p style={{ margin: "2px 0 0", fontSize: 12, color: "#aaa" }}>
+                        {new Date(h.recordedAt).toLocaleDateString()} at{" "}
+                        {new Date(h.recordedAt).toLocaleTimeString()}
                       </p>
                     </div>
                   </div>
@@ -165,11 +241,26 @@ export default function BmiPatientPage() {
   );
 }
 
+// ============ Styles ============
 const page: React.CSSProperties = {
   minHeight: "100vh",
   background: "#F6F3EC",
   padding: "40px 32px",
   fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+};
+
+const backBtn: React.CSSProperties = {
+  padding: "10px 20px",
+  borderRadius: 8,
+  border: "1px solid #DCD6C8",
+  background: "#FFF",
+  cursor: "pointer",
+  fontSize: 14,
+  fontWeight: 500,
+  color: "#0B3D3A",
+  marginBottom: 24,
+  maxWidth: "200px",
+  transition: "background 0.2s",
 };
 
 const wrap: React.CSSProperties = { maxWidth: 860, margin: "0 auto" };
@@ -236,6 +327,7 @@ const submitBtn: React.CSSProperties = {
   border: "none",
   borderRadius: 8,
   cursor: "pointer",
+  transition: "background 0.2s",
 };
 
 const errorText: React.CSSProperties = { fontSize: 13, color: "#C0392B", margin: 0 };
@@ -250,7 +342,6 @@ const resultBox: React.CSSProperties = {
 const resultBmi: React.CSSProperties = {
   fontFamily: "'Fraunces', Georgia, serif",
   fontSize: 40,
-  color: "#0B3D3A",
   margin: 0,
   fontWeight: 500,
 };
@@ -258,7 +349,6 @@ const resultBmi: React.CSSProperties = {
 const resultCategory: React.CSSProperties = {
   fontSize: 13.5,
   fontWeight: 600,
-  color: "#FF8A5B",
   textTransform: "uppercase",
   letterSpacing: "0.05em",
   margin: "4px 0 10px",
