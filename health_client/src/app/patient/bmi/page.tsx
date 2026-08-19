@@ -23,22 +23,22 @@ interface BmiHistoryEntry {
 
 export default function BmiPatientPage() {
   const router = useRouter();
-  
-  // ⭐ ALL STATE VARIABLES DECLARED HERE
+
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
-  const [age, setAge] = useState("");        // ✅ Now defined
-  const [gender, setGender] = useState("");   // ✅ Now defined
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
   const [result, setResult] = useState<BmiResult | null>(null);
   const [history, setHistory] = useState<BmiHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [clearingAll, setClearingAll] = useState(false);
 
   // ============ Check Auth ============
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
     if (!token || role !== "PATIENT") {
       router.push("/login");
       return;
@@ -46,13 +46,20 @@ export default function BmiPatientPage() {
     loadHistory();
   }, [router]);
 
+  function authHeaders() {
+    const token = localStorage.getItem("token");
+    return { Authorization: `Bearer ${token}` };
+  }
+
   // ============ Load History ============
   const loadHistory = async () => {
     try {
-      const data = await apiFetch<BmiHistoryEntry[]>("/api/bmi/history");
+      const data = await apiFetch<BmiHistoryEntry[]>("/api/bmi/history", {
+        headers: authHeaders(),
+      });
       setHistory(data);
-    } catch (error) {
-      console.error("Error loading BMI history:", error);
+    } catch (err) {
+      console.error("Error loading BMI history:", err);
       setHistory([]);
     }
   };
@@ -69,10 +76,10 @@ export default function BmiPatientPage() {
     }
 
     setLoading(true);
-
     try {
       const data = await apiFetch<BmiResult>("/api/bmi/calculate/save", {
         method: "POST",
+        headers: authHeaders(),
         body: JSON.stringify({
           height: Number(height),
           weight: Number(weight),
@@ -82,19 +89,49 @@ export default function BmiPatientPage() {
       });
 
       setResult(data);
-      loadHistory(); // Refresh history after saving
+      await loadHistory();
 
-      // Clear form
       setHeight("");
       setWeight("");
       setAge("");
       setGender("");
-
-    } catch (error) {
-      console.error("BMI calculation error:", error);
+    } catch (err) {
+      console.error("BMI calculation error:", err);
       setError("Couldn't calculate BMI. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ============ Delete one entry ============
+  const handleDeleteEntry = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await apiFetch(`/api/bmi/history/${id}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      setHistory((prev) => prev.filter((h) => h.id !== id));
+    } catch (err) {
+      console.error("Failed to delete entry:", err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // ============ Delete all history ============
+  const handleClearAll = async () => {
+    setClearingAll(true);
+    try {
+      await apiFetch("/api/bmi/history", {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      setHistory([]);
+    } catch (err) {
+      console.error("Failed to clear history:", err);
+    } finally {
+      setClearingAll(false);
     }
   };
 
@@ -110,7 +147,6 @@ export default function BmiPatientPage() {
 
   return (
     <div style={page}>
-      {/* Back Button */}
       <button onClick={() => router.push("/patient/dashboard")} style={backBtn}>
         ← Back to Dashboard
       </button>
@@ -125,7 +161,6 @@ export default function BmiPatientPage() {
           <div style={card}>
             <h2 style={cardTitle}>New Entry</h2>
             <form onSubmit={handleCalculate} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {/* Height */}
               <label style={fieldWrap}>
                 <span style={fieldLabel}>Height (cm)</span>
                 <input
@@ -140,7 +175,6 @@ export default function BmiPatientPage() {
                 />
               </label>
 
-              {/* Weight */}
               <label style={fieldWrap}>
                 <span style={fieldLabel}>Weight (kg)</span>
                 <input
@@ -155,7 +189,6 @@ export default function BmiPatientPage() {
                 />
               </label>
 
-              {/* Age */}
               <label style={fieldWrap}>
                 <span style={fieldLabel}>Age (Years)</span>
                 <input
@@ -170,7 +203,6 @@ export default function BmiPatientPage() {
                 />
               </label>
 
-              {/* Gender */}
               <label style={fieldWrap}>
                 <span style={fieldLabel}>Gender</span>
                 <select
@@ -193,7 +225,6 @@ export default function BmiPatientPage() {
               </button>
             </form>
 
-            {/* ===== Result ===== */}
             {result && (
               <div style={resultBox}>
                 <p style={{ ...resultBmi, color: getBmiColor(result.category) }}>
@@ -209,7 +240,15 @@ export default function BmiPatientPage() {
 
           {/* ===== History ===== */}
           <div style={card}>
-            <h2 style={cardTitle}>History</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h2 style={{ ...cardTitle, margin: 0 }}>History</h2>
+              {history.length > 0 && (
+                <button onClick={handleClearAll} disabled={clearingAll} style={clearAllBtn}>
+                  {clearingAll ? "Clearing…" : "Clear all"}
+                </button>
+              )}
+            </div>
+
             {history.length === 0 ? (
               <p style={{ color: "#8A8577", fontSize: 14 }}>
                 No entries yet — your first calculation will appear here.
@@ -230,6 +269,14 @@ export default function BmiPatientPage() {
                         {new Date(h.recordedAt).toLocaleTimeString()}
                       </p>
                     </div>
+                    <button
+                      onClick={() => handleDeleteEntry(h.id)}
+                      disabled={deletingId === h.id}
+                      style={deleteEntryBtn}
+                      title="Delete this entry"
+                    >
+                      {deletingId === h.id ? "…" : "✕"}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -260,7 +307,6 @@ const backBtn: React.CSSProperties = {
   color: "#0B3D3A",
   marginBottom: 24,
   maxWidth: "200px",
-  transition: "background 0.2s",
 };
 
 const wrap: React.CSSProperties = { maxWidth: 860, margin: "0 auto" };
@@ -300,7 +346,6 @@ const cardTitle: React.CSSProperties = {
   fontFamily: "'Fraunces', Georgia, serif",
   fontSize: 18,
   color: "#0B3D3A",
-  margin: "0 0 16px",
 };
 
 const fieldWrap: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 6 };
@@ -327,7 +372,6 @@ const submitBtn: React.CSSProperties = {
   border: "none",
   borderRadius: 8,
   cursor: "pointer",
-  transition: "background 0.2s",
 };
 
 const errorText: React.CSSProperties = { fontSize: 13, color: "#C0392B", margin: 0 };
@@ -362,7 +406,32 @@ const resultAdvice: React.CSSProperties = {
 };
 
 const historyRow: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
   padding: "10px 12px",
   border: "1px solid #DCD6C8",
   borderRadius: 7,
+};
+
+const deleteEntryBtn: React.CSSProperties = {
+  fontSize: 13,
+  color: "#C0392B",
+  background: "transparent",
+  border: "1px solid #EAD4D0",
+  borderRadius: 6,
+  width: 26,
+  height: 26,
+  cursor: "pointer",
+  lineHeight: 1,
+};
+
+const clearAllBtn: React.CSSProperties = {
+  fontSize: 12.5,
+  color: "#C0392B",
+  background: "transparent",
+  border: "1px solid #EAD4D0",
+  borderRadius: 6,
+  padding: "5px 10px",
+  cursor: "pointer",
 };
