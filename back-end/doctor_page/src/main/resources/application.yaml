@@ -1,3 +1,10 @@
 spring:
   application:
     name: doctor_page
+  data:
+    mongodb:
+      uri: ${MONGODB_URI}
+server:
+  port: ${PORT}
+api:
+  key: ${API_KEY}

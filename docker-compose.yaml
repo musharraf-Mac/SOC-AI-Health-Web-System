@@ -1,0 +1,107 @@
+version: "3.9"
+
+services:
+
+  auth-service:
+    build: ./back-end/auth
+    container_name: auth-service
+    ports:
+      - "8081:8080"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - API_KEY=${API_KEY}
+      - PORT=8080
+    networks:
+      - clinic-net
+
+  appointment-service:
+    build: ./back-end/doc_booking
+    container_name: appointment-service
+    ports:
+      - "8082:8080"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - API_KEY=${API_KEY}
+      - PORT=8080
+    networks:
+      - clinic-net
+
+  lab-report-service:
+    build: ./back-end/lab_rep
+    container_name: lab-report-service
+    ports:
+      - "8083:8080"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - API_KEY=${API_KEY}
+      - PORT=8080
+    networks:
+      - clinic-net
+
+  bmi-service:
+    build: ./back-end/bmi
+    container_name: bmi-service
+    ports:
+      - "8084:8080"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - API_KEY=${API_KEY}
+      - PORT=8080
+    networks:
+      - clinic-net
+
+  doctor-service:
+    build: ./back-end/doctor_page
+    container_name: doctor-service
+    ports:
+      - "8086:8080"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - API_KEY=${API_KEY}
+      - PORT=8080
+    networks:
+      - clinic-net
+
+  api-gateway:
+    build: ./back-end/apigateway
+    container_name: api-gateway
+    ports:
+      - "8087:8087"
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - auth-service
+      - appointment-service
+      - lab-report-service
+      - bmi-service
+      - doctor-service
+      - redis
+    networks:
+      - clinic-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - clinic-net
+
+  client:
+    build: ./health_client
+    container_name: client
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api-gateway
+    networks:
+      - clinic-net
+
+networks:
+  clinic-net:
+    driver: bridge

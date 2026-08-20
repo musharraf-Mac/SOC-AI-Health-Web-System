@@ -8,3 +8,5 @@ server:
   port: ${PORT}
 jwt:
   secret: ${JWT_SECRET}
+api:
+  key: ${API_KEY}
