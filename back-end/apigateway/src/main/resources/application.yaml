@@ -10,6 +10,8 @@ spring:
               uri: http://localhost:8081
               predicates:
                 - Path=/api/auth/**
+              filters:
+                - AddRequestHeader=X-API-KEY, ${API_KEY}
             - id: doc_booking
               uri: http://localhost:8082
               predicates:
