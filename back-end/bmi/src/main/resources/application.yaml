@@ -13,3 +13,5 @@ server:
 
 jwt:
   secret: ${JWET_SECRET}
+api:
+  key: ${API_KEY}
