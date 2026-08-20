@@ -12,6 +12,9 @@ services:
       - DATABASE=${DATABASE}
       - API_KEY=${API_KEY}
       - PORT=8081
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - clinic-net
 
@@ -26,6 +29,9 @@ services:
       - DATABASE=${DATABASE}
       - API_KEY=${API_KEY}
       - PORT=8082
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - clinic-net
 
@@ -41,6 +47,9 @@ services:
       - API_KEY=${API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - PORT=8083
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - clinic-net
 
@@ -55,6 +64,9 @@ services:
       - API_KEY=${API_KEY}
       - DATABASE=${DATABASE}
       - PORT=8084
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - clinic-net
 
@@ -69,6 +81,9 @@ services:
       - DATABASE=${DATABASE}
       - API_KEY=${API_KEY}
       - PORT=8086
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - clinic-net
 
@@ -82,6 +97,9 @@ services:
       - API_KEY=${API_KEY}
       - DATABASE=${DATABASE}
       - PORT=8087
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     depends_on:
       - auth-service
       - appointment-service
@@ -99,6 +117,9 @@ services:
       - "6379:6379"
     networks:
       - clinic-net
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
   client:
     build: ./health_client

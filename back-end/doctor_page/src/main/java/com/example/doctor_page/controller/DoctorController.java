@@ -1,20 +1,25 @@
 package com.example.doctor_page.controller;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.doctor_page.model.Patient;
 import com.example.doctor_page.model.Prescription;
 import com.example.doctor_page.repository.PatientRepository;
 import com.example.doctor_page.repository.PrescriptionRepository;
 import com.example.doctor_page.service.PrescriptionService;
-
-
-import java.io.File;
-import java.nio.file.Files;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/doctor")
@@ -31,7 +36,7 @@ public class DoctorController {
     private PrescriptionService prescriptionService;
 
 
-    // =========================================================
+    
     // 1. Get all booked patients
     // =========================================================
     @GetMapping("/patients")
