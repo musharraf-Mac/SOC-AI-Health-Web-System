@@ -28,8 +28,8 @@ public class SecureConfig {
             .authorizeHttpRequests(auth -> auth
                 // Allow public endpoints
                 .requestMatchers(
-                    "/api/bmi/calculate",
-                    "/api/bmi/**",
+                    "/api/doc_booking/calculate",
+                    "/api/doc_booking/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/actuator/**"
