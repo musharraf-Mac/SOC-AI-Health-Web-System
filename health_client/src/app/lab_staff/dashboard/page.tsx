@@ -23,7 +23,7 @@ export default function LabStaffDashboard() {
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState<LabReport | null>(null);
-  
+
   // Upload state
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
@@ -42,7 +42,9 @@ export default function LabStaffDashboard() {
     setLoading(true);
     setError("");
     try {
-      const data = await apiFetch<LabReport[]>("/api/reports/view");
+      const res = await fetch("http://localhost:8083/api/reports");
+      if (!res.ok) throw new Error("Failed to load reports");
+      const data = await res.json();
       setReports(data);
     } catch (err) {
       setError("Failed to load reports. Please try again.");
@@ -70,10 +72,9 @@ export default function LabStaffDashboard() {
     formData.append("file", uploadForm.file);
 
     try {
-      const response = await fetch("/api/reports/upload", {
+      const response = await fetch("http://localhost:8083/api/reports/upload", {
         method: "POST",
         body: formData,
-        credentials: "include",
       });
 
       if (!response.ok) {
@@ -83,7 +84,7 @@ export default function LabStaffDashboard() {
 
       const data = await response.json();
       console.log("Upload successful:", data);
-      
+
       // Close modal and refresh
       setShowUploadModal(false);
       setUploadForm({ patientName: "", patientEmail: "", reportType: "", file: null });
@@ -99,9 +100,10 @@ export default function LabStaffDashboard() {
   const handleDelete = async (reportId: string) => {
     setDeleteLoading(reportId);
     try {
-      await apiFetch(`/api/reports/${reportId}`, {
+      const res = await fetch(`http://localhost:8083/api/reports/${reportId}`, {
         method: "DELETE",
       });
+      if (!res.ok) throw new Error("Delete failed");
       setReports(reports.filter((r) => r.id !== reportId));
       setShowDeleteModal(false);
       setSelectedReport(null);
@@ -162,6 +164,12 @@ export default function LabStaffDashboard() {
 
   return (
     <div style={pageWrap}>
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+
       {/* Header */}
       <header style={header}>
         <div style={headerLeft}>
@@ -169,15 +177,10 @@ export default function LabStaffDashboard() {
           <span style={reportCount}>{reports.length} reports</span>
         </div>
         <div style={headerRight}>
-          {/* ⭐ UPLOAD BUTTON */}
-          <button
-            onClick={() => setShowUploadModal(true)}
-            style={uploadBtn}
-          >
+          <button onClick={() => setShowUploadModal(true)} style={uploadBtn}>
             <span>📤</span> Upload Report
           </button>
 
-          {/* Profile Button */}
           <button
             onClick={() => router.push("../../profile_page")}
             style={profileBtn}
@@ -185,8 +188,7 @@ export default function LabStaffDashboard() {
           >
             <span style={profileIcon}>👤</span>
           </button>
-          
-          {/* Logout Button */}
+
           <button onClick={handleLogout} style={logoutBtn}>
             <span>🚪</span> Logout
           </button>
@@ -195,14 +197,12 @@ export default function LabStaffDashboard() {
 
       {/* Main Content */}
       <div style={content}>
-        {/* Toolbar */}
         <div style={toolbar}>
           <button onClick={fetchReports} style={refreshBtn}>
             🔄 Refresh
           </button>
         </div>
 
-        {/* Error Message */}
         {error && (
           <div style={errorBanner}>
             <span>⚠️</span> {error}
@@ -212,7 +212,6 @@ export default function LabStaffDashboard() {
           </div>
         )}
 
-        {/* Reports Table */}
         {loading ? (
           <div style={loadingContainer}>
             <div style={spinner}></div>
@@ -277,7 +276,7 @@ export default function LabStaffDashboard() {
         )}
       </div>
 
-      {/* ⭐ UPLOAD MODAL */}
+      {/* Upload Modal */}
       {showUploadModal && (
         <div style={modalOverlay}>
           <div style={modal}>
@@ -339,9 +338,7 @@ export default function LabStaffDashboard() {
                   style={fileInput}
                   required
                 />
-                {uploadForm.file && (
-                  <span style={fileName}>{uploadForm.file.name}</span>
-                )}
+                {uploadForm.file && <span style={fileName}>{uploadForm.file.name}</span>}
               </div>
 
               {error && <p style={modalError}>{error}</p>}
@@ -358,11 +355,7 @@ export default function LabStaffDashboard() {
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={uploadLoading}
-                  style={modalUploadBtn}
-                >
+                <button type="submit" disabled={uploadLoading} style={modalUploadBtn}>
                   {uploadLoading ? "Uploading..." : "📤 Upload Report"}
                 </button>
               </div>
@@ -391,10 +384,7 @@ export default function LabStaffDashboard() {
               >
                 Cancel
               </button>
-              <button
-                onClick={() => handleDelete(selectedReport.id)}
-                style={modalDeleteBtn}
-              >
+              <button onClick={() => handleDelete(selectedReport.id)} style={modalDeleteBtn}>
                 Delete Report
               </button>
             </div>
@@ -453,7 +443,6 @@ const headerRight: React.CSSProperties = {
   gap: "12px",
 };
 
-// ⭐ UPLOAD BUTTON STYLE
 const uploadBtn: React.CSSProperties = {
   padding: "10px 20px",
   borderRadius: "8px",
@@ -634,7 +623,6 @@ const deleteBtn: React.CSSProperties = {
   transition: "background 0.2s",
 };
 
-// Modal Styles
 const modalOverlay: React.CSSProperties = {
   position: "fixed",
   top: 0,
@@ -760,12 +748,3 @@ const modalUploadBtn: React.CSSProperties = {
   fontSize: "14px",
   fontWeight: 600,
 };
-
-// Add keyframes for spinner
-const styleSheet = document.createElement("style");
-styleSheet.textContent = `
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-`;
-document.head.appendChild(styleSheet);
