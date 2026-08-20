@@ -177,7 +177,11 @@ export default function LabStaffDashboard() {
           <span style={reportCount}>{reports.length} reports</span>
         </div>
         <div style={headerRight}>
-          <button onClick={() => setShowUploadModal(true)} style={uploadBtn}>
+          {/* ⭐ UPLOAD BUTTON */}
+          <button
+            onClick={() => setShowUploadModal(true)}
+            style={uploadBtn}
+          >
             <span>📤</span> Upload Report
           </button>
 
@@ -276,7 +280,7 @@ export default function LabStaffDashboard() {
         )}
       </div>
 
-      {/* Upload Modal */}
+      {/* ⭐ UPLOAD MODAL */}
       {showUploadModal && (
         <div style={modalOverlay}>
           <div style={modal}>
