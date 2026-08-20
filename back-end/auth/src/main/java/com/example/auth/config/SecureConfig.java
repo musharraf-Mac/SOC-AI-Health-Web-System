@@ -40,7 +40,7 @@ public class SecureConfig {
             
             // Configure authorization rules - ORDER MATTERS!
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/auth/**", "/swagger-ui/**","/v3/api-docs/**").permitAll()
                 .requestMatchers("/error").permitAll()  // Allow error pages
                 .requestMatchers("/actuator/health").permitAll() 
                 
