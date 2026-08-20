@@ -8,9 +8,9 @@ services:
     ports:
       - "8081:8080"
     environment:
-      - MONGODB_URI=${AUTH_MONGODB_URI}
+      - MONGODB_URI=${MONGODB_URI}
       - JWT_SECRET=${JWT_SECRET}
-      - API_KEY=${AUTH_API_KEY}
+      - API_KEY=${API_KEY}
       - PORT=8080
     networks:
       - clinic-net
@@ -21,9 +21,9 @@ services:
     ports:
       - "8082:8080"
     environment:
-      - MONGODB_URI=${APPOINTMENT_MONGODB_URI}
+      - MONGODB_URI=${MONGODB_URI}
       - JWT_SECRET=${JWT_SECRET}
-      - API_KEY=${APPOINTMENT_API_KEY}
+      - API_KEY=${API_KEY}
       - PORT=8080
     networks:
       - clinic-net
@@ -34,9 +34,9 @@ services:
     ports:
       - "8083:8080"
     environment:
-      - MONGODB_URI=${LAB_MONGODB_URI}
+      - MONGODB_URI=${MONGODB_URI}
       - JWT_SECRET=${JWT_SECRET}
-      - API_KEY=${LAB_API_KEY}
+      - API_KEY=${API_KEY}
       - PORT=8080
     networks:
       - clinic-net
@@ -47,22 +47,22 @@ services:
     ports:
       - "8084:8080"
     environment:
-      - MONGODB_URI=${BMI_MONGODB_URI}
+      - MONGODB_URI=${MONGODB_URI}
       - JWT_SECRET=${JWT_SECRET}
-      - API_KEY=${BMI_API_KEY}
+      - API_KEY=${API_KEY}
       - PORT=8080
     networks:
       - clinic-net
 
   doctor-service:
-    build: ./back-end/doctor
+    build: ./back-end/doctor_page
     container_name: doctor-service
     ports:
       - "8086:8080"
     environment:
-      - MONGODB_URI=${DOCTOR_MONGODB_URI}
+      - MONGODB_URI=${MONGODB_URI}
       - JWT_SECRET=${JWT_SECRET}
-      - API_KEY=${DOCTOR_API_KEY}
+      - API_KEY=${API_KEY}
       - PORT=8080
     networks:
       - clinic-net
@@ -93,7 +93,7 @@ services:
       - clinic-net
 
   client:
-    build: ./front-end/health_client
+    build: ./health_client
     container_name: client
     ports:
       - "3000:3000"
