@@ -24,3 +24,6 @@ ocr:
   tessdata:
     path: ${TESSDATA_PATH:/opt/homebrew/share/tessdata}
 
+api:
+  key: ${API_KEY}
+
