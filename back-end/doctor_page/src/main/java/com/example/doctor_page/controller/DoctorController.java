@@ -1,17 +1,24 @@
 package com.example.doctor_page.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.example.doctor_page.model.Patient;
+import com.example.doctor_page.model.Prescription;
+import com.example.doctor_page.repository.PatientRepository;
+import com.example.doctor_page.repository.PrescriptionRepository;
+import com.example.doctor_page.service.PrescriptionService;
+
 
 import java.io.File;
 import java.nio.file.Files;
 import java.util.List;
 
 @RestController
-@RequestMapping("/doctor")
-@CrossOrigin(origins = "*")
+@RequestMapping("/api/doctor")
+// @CrossOrigin(origins = "*")
 public class DoctorController {
 
     @Autowired
@@ -32,15 +39,35 @@ public class DoctorController {
         return patientRepo.findAll();
     }
 
-
     // =========================================================
     // 2. Get patient by email
     // =========================================================
-    @GetMapping("/patients/{email}")
-    public Patient getPatient(@PathVariable String email) {
-        return patientRepo.findByEmail(email);
+    @GetMapping("/patients/{patientEmail}")
+    public ResponseEntity<?> getPatientsByEmail(@PathVariable String patientEmail) {
+    try {
+        System.out.println("Searching for patients with email: " + patientEmail);
+        
+        // Returns List of patients with this email
+        List<Patient> patients = patientRepo.findByPatientEmail(patientEmail);
+        
+        if (patients.isEmpty()) {
+            System.out.println("No patients found with email: " + patientEmail);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body("No patients found with email: " + patientEmail);
+        }
+        
+        System.out.println("Found " + patients.size() + " patients with email: " + patientEmail);
+        
+        // ⭐ Return ALL patients with that email (just like /patients endpoint)
+        return ResponseEntity.ok(patients);
+        
+    } catch (Exception e) {
+        System.err.println("Error fetching patients: " + e.getMessage());
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body("Error fetching patients: " + e.getMessage());
     }
-
+}
 
     // =========================================================
     // 3. Save prescription + generate Webpage + PDF + QR
@@ -56,7 +83,6 @@ public class DoctorController {
 
         // Save webpage URL into prescription object
         prescription.setUrl(url);
-
 
         // -----------------------------------------------------
         // Step 2: Generate PDF
@@ -86,11 +112,11 @@ public class DoctorController {
     // =========================================================
     // 4. Retrieve prescriptions by patient email
     // =========================================================
-    @GetMapping("/prescriptions/{email}")
+    @GetMapping("/prescriptions/{patientEmail}")
     public List<Prescription> getPrescriptions(
-            @PathVariable String email) {
+            @PathVariable String patientEmail) {
 
-        return prescriptionRepo.findByPatientEmail(email);
+        return prescriptionRepo.findByPatientEmail(patientEmail);
     }
 
 
@@ -112,11 +138,8 @@ public class DoctorController {
         if (!file.exists()) {
             return ResponseEntity.notFound().build();
         }
-
-
         // Read HTML file
         String content = Files.readString(file.toPath());
-
 
         // Return HTML webpage
         return ResponseEntity.ok(content);

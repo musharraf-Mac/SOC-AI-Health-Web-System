@@ -1,21 +1,21 @@
 package com.example.doctor_page.service;
 
-import org.springframework.stereotype.Service;
-
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.qrcode.QRCodeWriter;
-
-import com.itextpdf.text.Document;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.pdf.PdfWriter;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
+
+import org.springframework.stereotype.Service;
+
+import com.example.doctor_page.model.Prescription;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfWriter;
 
 @Service
 public class PrescriptionService {

@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -92,7 +93,7 @@ public class authController {
             log.info("User found: {}", user.getEmail());
             
             // DEBUG: Log all user fields
-            log.info("User fullName: '{}'", user.getFullname());
+            log.info("User fullname: '{}'", user.getFullname());
             log.info("User email: '{}'", user.getEmail());
             log.info("User role: '{}'", user.getRole());
             
@@ -100,7 +101,7 @@ public class authController {
             Map<String, Object> response = new HashMap<>();
             
             // Add each field with null checking
-            response.put("fullName", user.getFullname() != null ? user.getFullname() : "Unknown");
+            response.put("fullname", user.getFullname() != null ? user.getFullname() : "Unknown");
             response.put("email", user.getEmail() != null ? user.getEmail() : "No email");
             response.put("role", user.getRole() != null ? user.getRole() : "No role");
             
@@ -128,5 +129,61 @@ public class authController {
             ));
         }
     }
+    @PostMapping("/logout")
+public ResponseEntity<?> logout(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+    // JWT is stateless — nothing to invalidate server-side.
+    // Real logout happens on the frontend by clearing localStorage.
+    // This endpoint exists for API completeness / Swagger docs.
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        return ResponseEntity.status(401).body(Map.of(
+            "error", "Authorization header is required"
+        ));
+    }
+    return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
+}
+
+@DeleteMapping("/delete")
+public ResponseEntity<?> deleteAccount(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+    try {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).body(Map.of(
+                "error", "Authorization header is required"
+            ));
+        }
+
+        String token = authHeader.substring(7);
+
+        if (!jwtUtil.validateToken(token)) {
+            return ResponseEntity.status(401).body(Map.of(
+                "error", "Invalid or expired token",
+                "details", "Please login again to get a new token"
+            ));
+        }
+
+        String userId = jwtUtil.getUserIdFromToken(token);
+        log.info("Delete account requested for userId: {}", userId);
+
+        authUser user = authrepo.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        authrepo.delete(user);
+        log.info("Account deleted for email: {}", user.getEmail());
+
+        return ResponseEntity.ok(Map.of("message", "Account deleted successfully"));
+
+    } catch (RuntimeException e) {
+        log.error("Runtime error in /delete-account endpoint: {}", e.getMessage());
+        return ResponseEntity.status(404).body(Map.of(
+            "error", "Account deletion failed",
+            "details", e.getMessage()
+        ));
+    } catch (Exception e) {
+        log.error("Unexpected error in /delete-account endpoint: ", e);
+        return ResponseEntity.status(500).body(Map.of(
+            "error", "Internal server error",
+            "details", e.getMessage() != null ? e.getMessage() : "Unknown error occurred"
+        ));
+    }
+}
    
 }

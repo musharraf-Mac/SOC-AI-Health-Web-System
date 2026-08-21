@@ -40,7 +40,7 @@ export default function LoginPage() {
         setError("Invalid role received from server.");
       }
     } catch (err) {
-      setError("Invalid email or password.");
+      setError("Some thing wrong happened.");
     } finally {
       setLoading(false);
     }

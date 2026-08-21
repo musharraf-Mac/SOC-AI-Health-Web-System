@@ -7,7 +7,7 @@ import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
+// import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/reports")
-@CrossOrigin(origins = "*")
+// @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class LabReportController {
 
@@ -54,10 +54,10 @@ public class LabReportController {
                 return ResponseEntity.badRequest().body(Map.of("error", "File is empty"));
             }
 
-            String contentType = file.getContentType();
+             /*String contentType = file.getContentType();
             if (contentType == null || !contentType.equals("application/pdf")) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Only PDF files are allowed"));
-            }
+            } */
 
             LabReport report = reportService.uploadReport(patientName, patientEmail, reportType, file);
 
@@ -77,7 +77,7 @@ public class LabReportController {
         }
     }
 
-    @GetMapping
+    @GetMapping ("/view")
     public ResponseEntity<List<LabReport>> getAllReports() {
         return ResponseEntity.ok(reportService.getAllReports());
     }
