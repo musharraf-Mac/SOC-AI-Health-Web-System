@@ -28,6 +28,7 @@ public class SecureConfig {
                 // Allow public endpoints
                 .requestMatchers(
                     "/api/doctor/patient",
+                    "/api/doctor/prescription",
                     "/api/doctor/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
