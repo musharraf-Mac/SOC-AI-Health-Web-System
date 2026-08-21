@@ -10,6 +10,7 @@ public class Prescription {
     @Id
     private String id;
     
+    private String tokenNumber;  
     private String doctorName;
     private String doctorEmail;
     private String patientName;
@@ -22,11 +23,16 @@ public class Prescription {
     private LocalDateTime updatedAt;
 
     // Constructors
-    public Prescription() {}
+    public Prescription() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+        this.status = "ACTIVE";
+    }
 
-    public Prescription(String doctorName, String doctorEmail, String patientName,
-                       String patientEmail, int patientAge, String disease,
-                       String prescriptionText) {
+    public Prescription(String tokenNumber, String doctorName, String doctorEmail,
+                       String patientName, String patientEmail, int patientAge, 
+                       String disease, String prescriptionText) {
+        this.tokenNumber = tokenNumber;
         this.doctorName = doctorName;
         this.doctorEmail = doctorEmail;
         this.patientName = patientName;
@@ -42,6 +48,9 @@ public class Prescription {
     // ============ Getters and Setters ============
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
+
+    public String getTokenNumber() { return tokenNumber; }
+    public void setTokenNumber(String tokenNumber) { this.tokenNumber = tokenNumber; }
 
     public String getDoctorName() { return doctorName; }
     public void setDoctorName(String doctorName) { this.doctorName = doctorName; }

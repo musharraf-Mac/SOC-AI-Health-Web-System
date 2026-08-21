@@ -11,7 +11,9 @@ import com.example.doctor_page.model.Patient;
 @Repository
 public interface PatientRepository extends MongoRepository<Patient, String> {
     
-    Optional<Patient> findByEmail(String patientEmail);    
+    Optional<Patient> findByTokenNumber(String tokenNumber);    
     
-    List<Patient> findAllByEmail(String patientEmail);
+    List<Patient> findByPatientEmail(String patientEmail);
+
+    List<Patient> findByPatientEmailAndStatus(String patientEmail, String status);
 }

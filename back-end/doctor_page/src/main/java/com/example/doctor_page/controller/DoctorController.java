@@ -41,16 +41,16 @@ public class DoctorController {
     }
 
     // =========================================================
-    // 2. Get patient by email
+    // 2. Get patient by token number
     // =========================================================
-    @GetMapping("/patients/{patientEmail}")
-    public ResponseEntity<?> getPatient(@PathVariable String patientEmail) {
-        Optional<Patient> patient = patientRepo.findByEmail(patientEmail);
+    @GetMapping("/patients/{tokenNumber}")
+    public ResponseEntity<?> getPatient(@PathVariable String tokenNumber) {
+        Optional<Patient> patient = patientRepo.findByTokenNumber(tokenNumber);
         if (patient.isPresent()) {
             return ResponseEntity.ok(patient.get());
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body("Patient not found with email: " + patientEmail);
+                .body("Patient not found with token number: " + tokenNumber);
         }
     }
 
@@ -61,7 +61,7 @@ public class DoctorController {
     public ResponseEntity<?> savePrescription(@RequestBody Prescription prescription) {
         try {
             // Optional: Validate patient exists
-            List<Patient> patients = patientRepo.findAllByEmail(prescription.getPatientEmail());
+            List<Patient> patients = patientRepo.findByPatientEmail(prescription.getPatientEmail());
             if (patients.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Patient not found with email: " + prescription.getPatientEmail());
