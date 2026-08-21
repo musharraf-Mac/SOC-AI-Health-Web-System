@@ -1,6 +1,7 @@
 package com.example.doctor_page.controller;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -81,10 +83,25 @@ public class DoctorController {
     // =========================================================
     // 4. Get prescriptions by patient email
     // =========================================================
-    @GetMapping("/prescriptions/{patientEmail}")
-    public List<Prescription> getPrescriptions(@PathVariable String patientEmail) {
-        return prescriptionRepo.findByPatientEmail(patientEmail);
+    @GetMapping("/prescriptions/me")
+public ResponseEntity<?> getMyPrescriptions(
+        @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        return ResponseEntity.status(401).body(Map.of("error", "Missing or invalid token"));
     }
+
+    String token = authHeader.substring(7);
+    if (!jwtUtil.validateToken(token)) {
+        return ResponseEntity.status(401).body(Map.of("error", "Invalid or expired token"));
+    }
+
+    String userId = jwtUtil.getUserIdFromToken(token);
+    
+
+    List<Prescription> prescriptions = prescriptionRepo.findByPatientEmail(patientEmailFromToken);
+    return ResponseEntity.ok(prescriptions);
+}
     @DeleteMapping("/prescriptions/delete/{id}")
     public ResponseEntity<?> deletePrescription(@PathVariable String id) {
         try {
