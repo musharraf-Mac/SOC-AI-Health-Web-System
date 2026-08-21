@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -84,4 +85,15 @@ public class DoctorController {
     public List<Prescription> getPrescriptions(@PathVariable String patientEmail) {
         return prescriptionRepo.findByPatientEmail(patientEmail);
     }
+    @DeleteMapping("/prescriptions/delete/{id}")
+    public ResponseEntity<?> deletePrescription(@PathVariable String id) {
+        try {
+            prescriptionRepo.deleteById(id);
+            return ResponseEntity.ok().body("Prescription deleted successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to delete prescription: " + e.getMessage()));
+        }
+    }
+
 }

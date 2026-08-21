@@ -8,8 +8,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document(collection = "prescriptions")
 public class Prescription {
     @Id
-    private String id;
-    
+    private String id;    
     private String tokenNumber;  
     private String doctorName;
     private String doctorEmail;
