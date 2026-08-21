@@ -27,14 +27,13 @@ public class SecureConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Allow public endpoints
-                .requestMatchers(
-                    "/api/reports/upload",
-                    "/api/reports/**",
+                .requestMatchers(                    
                     "/swagger-ui/**",
+                    "/api/reports/**",
                     "/v3/api-docs/**",
                     "/actuator/**"
                 ).permitAll()
-                // ⭐ All other requests need API key
+                // All other requests need API key
                 .anyRequest().authenticated()
             )
             // REGISTER THE API KEY FILTER HERE

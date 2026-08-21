@@ -14,7 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @Component
 public class ApiKeyFilter extends OncePerRequestFilter {
-     @Value("${api.key}")
+     @Value("${api.key:WORK-123}")
     private String validApiKey;
 
     // Paths that should skip API key check (e.g. health checks, Swagger docs)
