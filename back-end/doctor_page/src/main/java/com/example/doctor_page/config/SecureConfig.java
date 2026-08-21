@@ -27,13 +27,13 @@ public class SecureConfig {
             .authorizeHttpRequests(auth -> auth
                 // Allow public endpoints
                 .requestMatchers(
-                    "/api/doctor/calculate",
+                    "/api/doctor/patient",
                     "/api/doctor/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/actuator/**"
                 ).permitAll()
-                // ⭐ All other requests need API key
+                // All other requests need API key
                 .anyRequest().authenticated()
             )
             // REGISTER THE API KEY FILTER HERE
