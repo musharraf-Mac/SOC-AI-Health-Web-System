@@ -81,14 +81,14 @@ public class LabReportController {
         return ResponseEntity.ok(reportService.getAllReports());
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getReportById(@PathVariable String id) {
-        Optional<LabReport> report = reportService.getReportById(id);
+    @GetMapping("/{fileId}")
+    public ResponseEntity<?> getReportByFileId(@PathVariable String fileId) {
+        Optional<LabReport> report = reportService.getReportByFileId(fileId);
         if (report.isPresent()) {
             return ResponseEntity.ok(report.get());
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Report not found with id: " + id));
+                    .body(Map.of("error", "Report not found with id: " + fileId));
         }
     }
 

@@ -80,6 +80,10 @@ public class LabReportService {
         return repository.findAll();
     }
 
+    public Optional<LabReport> getReportByFileId(String fileId) {
+        return repository.findByFileId(fileId);
+    }
+
     public Optional<LabReport> getReportById(String id) {
         return repository.findById(id);
     }
