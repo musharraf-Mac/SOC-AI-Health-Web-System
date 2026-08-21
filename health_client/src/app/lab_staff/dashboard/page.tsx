@@ -70,26 +70,18 @@ export default function LabStaffDashboard() {
     formData.append("file", uploadForm.file);
 
     try {
-      const response = await fetch("/api/reports/upload", {
+      const response = await apiFetch("/api/reports/upload", {
         method: "POST",
-        body: formData,
-        credentials: "include",
+        body: formData
+        
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Upload failed");
-      }
-
-      const data = await response.json();
-      console.log("Upload successful:", data);
-      
-      // Close modal and refresh
+      console.log("Upload response:", response);
+      //close modal and reset form
       setShowUploadModal(false);
       setUploadForm({ patientName: "", patientEmail: "", reportType: "", file: null });
-      fetchReports();
+      fetchReports(); // Refresh the reports list
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
+      setError("Failed to upload report. Please try again.");
       console.error("Upload error:", err);
     } finally {
       setUploadLoading(false);
@@ -99,7 +91,7 @@ export default function LabStaffDashboard() {
   const handleDelete = async (reportId: string) => {
     setDeleteLoading(reportId);
     try {
-      await apiFetch(`/api/reports/${reportId}`, {
+      await apiFetch(`/api/reports/delete/${reportId}`, {
         method: "DELETE",
       });
       setReports(reports.filter((r) => r.id !== reportId));
