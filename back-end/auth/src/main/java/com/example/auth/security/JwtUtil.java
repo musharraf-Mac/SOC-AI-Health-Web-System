@@ -39,16 +39,17 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(String userId, String role) {
+    public String generateToken(String userId, String role, String email) {
         try {
             Date now = new Date();
             Date expiryDate = new Date(now.getTime() + expirationMs);
             
-            log.info("Generating token for user: {}, role: {}", userId, role);
+            log.info("Generating token for user: {}, role: {}, email: {}", userId, role, email);
             
             return Jwts.builder()
                 .subject(userId)
                 .claim("role", role)
+                .claim("email", email)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())

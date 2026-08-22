@@ -20,6 +20,7 @@ import com.example.doctor_page.model.Patient;
 import com.example.doctor_page.model.Prescription;
 import com.example.doctor_page.repository.PatientRepository;
 import com.example.doctor_page.repository.PrescriptionRepository;
+import com.example.doctor_page.security.JwtUtil;
 import com.example.doctor_page.service.PrescriptionService;
 
 @RestController
@@ -34,6 +35,12 @@ public class DoctorController {
 
     @Autowired
     private PrescriptionService prescriptionService;
+
+    private final JwtUtil jwtUtil;
+
+    public DoctorController(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
 
     // =========================================================
     // 1. Get all patients
@@ -80,9 +87,9 @@ public class DoctorController {
         }
     }
 
-    // =========================================================
+    
     // 4. Get prescriptions by patient email
-    // =========================================================
+    
     @GetMapping("/prescriptions/me")
 public ResponseEntity<?> getMyPrescriptions(
         @RequestHeader(value = "Authorization", required = false) String authHeader) {
@@ -96,9 +103,9 @@ public ResponseEntity<?> getMyPrescriptions(
         return ResponseEntity.status(401).body(Map.of("error", "Invalid or expired token"));
     }
 
-    String userId = jwtUtil.getUserIdFromToken(token);
-    
-
+    // String userId = jwtUtil.getUserIdFromToken(token);
+    String patientEmailFromToken = jwtUtil.getEmailFromToken(token); // Assuming you have a method to extract email from token    
+    System.out.println("Extracted patient email from token: " + patientEmailFromToken); // Debugging line
     List<Prescription> prescriptions = prescriptionRepo.findByPatientEmail(patientEmailFromToken);
     return ResponseEntity.ok(prescriptions);
 }

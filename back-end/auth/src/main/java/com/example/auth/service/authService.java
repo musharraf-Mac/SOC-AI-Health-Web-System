@@ -78,7 +78,7 @@ public class authService {
         if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid credentials");
         }
-        String token = jwtUtil.generateToken(user.getId(), user.getRole());
+        String token = jwtUtil.generateToken(user.getId(), user.getRole(), user.getEmail());
         log.info("Token generated for user ID : {}", user.getEmail());
         return Map.of("token", token, "role", user.getRole());
     }
