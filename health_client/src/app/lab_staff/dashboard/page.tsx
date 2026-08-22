@@ -34,10 +34,6 @@ export default function LabStaffDashboard() {
     file: null as File | null,
   });
 
-  useEffect(() => {
-    fetchReports();
-  }, []);
-
   const fetchReports = async () => {
     setLoading(true);
     setError("");
@@ -51,6 +47,11 @@ export default function LabStaffDashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+  
 
   // Handle Upload
   const handleUpload = async (e: React.FormEvent) => {
@@ -242,7 +243,7 @@ export default function LabStaffDashboard() {
                     <td>
                       <div style={actionButtons}>
                         <button
-                          onClick={() => router.push(`/lab_staff/reports/${report.id}`)}
+                          onClick={() => router.push(`/lab_staff/reports/${report.fileId}`)}
                           style={viewBtn}
                           title="View Report"
                         >
