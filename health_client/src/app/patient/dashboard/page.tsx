@@ -33,7 +33,7 @@ interface Booking {
   createdAt: string;
 }
 
-// ⭐ Lab Report Type (from lab_rep service)
+// Lab Report Type (from lab_rep service)
 interface LabReport {
   id: string;
   patientName: string;
@@ -45,19 +45,20 @@ interface LabReport {
   analysisResult?: string;
 }
 
-// ⭐ Prescription Type (from doctor service)
+// Prescription Type (from doctor service)
 interface Prescription {
   id: string;
-  patientId: string;
-  patientName: string;
-  doctorId: string;
+  tokenNumber: string;
   doctorName: string;
-  diagnosis: string;
-  medications: Medication[];
-  instructions: string;
-  prescribedDate: string;
-  expiryDate: string;
+  doctorEmail: string;
+  patientName: string;
+  patientEmail: string;
+  patientAge: number;
+  disease: string;
+  prescriptionText: string;
   status: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface Medication {
@@ -107,7 +108,7 @@ export default function PatientDashboard() {
 
   // ============ Fetch Data ============
 
-  // ⭐ Fetch Doctors from doc_booking service
+  // Fetch Doctors from doc_booking service
   const fetchDoctors = async () => {
     try {
       const data = await apiFetch("/api/doc_booking/doctors");
@@ -118,7 +119,7 @@ export default function PatientDashboard() {
     }
   };
 
-  // ⭐ Fetch Bookings from doc_booking service
+  // Fetch Bookings from doc_booking service
   const fetchBookings = async () => {
     try {
       const data = await apiFetch(`/api/doc_booking/patient/${patientEmail}/bookings`);
@@ -128,7 +129,7 @@ export default function PatientDashboard() {
     }
   };
 
-  // ⭐ Fetch Lab Reports from lab_rep service
+  // Fetch Lab Reports from lab_rep service
   const fetchLabReports = async () => {
     try {
       const data = await apiFetch(`/api/reports/patient/${patientEmail}`);
@@ -138,10 +139,12 @@ export default function PatientDashboard() {
     }
   };
 
-  // ⭐ Fetch Prescriptions from doctor service
+  // Fetch Prescriptions from doctor service
   const fetchPrescriptions = async () => {
     try {
-      const data = await apiFetch(`/api/doctor/prescriptions/patient/${patientEmail}`);
+      const data = await apiFetch(`/api/doctor/prescriptions/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setPrescriptions(data);
     } catch (error) {
       console.error("Error fetching prescriptions:", error);
@@ -636,36 +639,44 @@ export default function PatientDashboard() {
                     borderBottom: "1px solid #EEE",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <strong>{p.doctorName}</strong>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <strong style={{ fontSize: 15, color: "#0B3D3A" }}>
+                        Dr. {p.doctorName}
+                      </strong>
+                      <p style={{ margin: "2px 0 0", fontSize: 13, color: "#8A8577" }}>
+                        {p.doctorEmail}
+                      </p>
+                    </div>
                     <span
                       style={{
                         padding: "2px 12px",
                         borderRadius: 12,
-                        fontSize: 12,
-                        background: p.status === "ACTIVE" ? "#E6F4EA" : "#FDE8E8",
-                        color: p.status === "ACTIVE" ? "#1E7E34" : "#C62828",
+                        fontSize: 11,
+                        background: p.status === "ACTIVE" ? "#E6F4EA" : p.status === "EXPIRED" ? "#FDE8E8" : "#FFF3E0",
+                        color: p.status === "ACTIVE" ? "#1E7E34" : p.status === "EXPIRED" ? "#C62828" : "#E65100",
                       }}
                     >
-                      {p.status}
+                      {p.status || "ACTIVE"}
                     </span>
                   </div>
-                  <p style={{ margin: "4px 0", fontSize: 13, color: "#1B1B18" }}>
-                    <strong>Diagnosis:</strong> {p.diagnosis}
+
+                  <p style={{ margin: "6px 0 0 0", fontSize: 14, color: "#1B1B18" }}>
+                    <strong>Token:</strong> #{p.tokenNumber}
                   </p>
-                  <p style={{ margin: "4px 0", fontSize: 13, color: "#1B1B18" }}>
-                    <strong>Medications:</strong>
-                  </p>
-                  <ul style={{ margin: "4px 0 0 0", paddingLeft: 20 }}>
-                    {p.medications.map((m, i) => (
-                      <li key={i} style={{ fontSize: 13, color: "#4A463E" }}>
-                        {m.name} - {m.dosage}, {m.frequency} for {m.duration}
-                      </li>
-                    ))}
-                  </ul>
-                  <p style={{ margin: "4px 0 0 0", fontSize: 12, color: "#8A8577" }}>
-                    Prescribed: {new Date(p.prescribedDate).toLocaleDateString()}
-                  </p>
+
+                  <div style={{ marginTop: 8, padding: 10, background: "#F6F3EC", borderRadius: 6 }}>
+                    <p style={{ margin: 0, fontSize: 14, color: "#1B1B18", whiteSpace: "pre-wrap" }}>
+                      {p.prescriptionText}
+                    </p>
+                  </div>
+
+                  <div style={{ marginTop: 8, display: "flex", gap: 16, fontSize: 12, color: "#8A8577" }}>
+                    <span>📅 Created: {new Date(p.createdAt).toLocaleDateString()}</span>
+                    {p.updatedAt && (
+                      <span>🔄 Updated: {new Date(p.updatedAt).toLocaleDateString()}</span>
+                    )}
+                  </div>
                 </div>
               ))
             )}
