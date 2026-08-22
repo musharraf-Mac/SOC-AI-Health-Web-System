@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+
+# Build artifacts
+target/
+*.jar
+*.war
+*.ear
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Environment (don't ignore .env if you want to include it)
+# .env
+
+# Node (if any)
+node_modules/
+npm-debug.log
+
+# Temp
+tmp/
+temp/
+*.tmp

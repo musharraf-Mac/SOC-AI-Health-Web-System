@@ -11,5 +11,5 @@ import com.example.lab_rep.model.LabReport;
 public interface LabReportRepository extends MongoRepository<LabReport, String> {
     List<LabReport> findByPatientEmail(String patientEmail);
     List<LabReport> findByPatientName(String patientName);
-    List<LabReport> findByStatus(String status);
+    List<LabReport> findByStatus(String status);    
 }

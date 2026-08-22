@@ -12,6 +12,8 @@ interface BmiResult {
 export default function BmiPublicPage() {
   const [height, setHeight] = useState(""); // cm
   const [weight, setWeight] = useState(""); // kg
+  const [age, setAge] = useState(""); // years
+  const [gender, setGender] = useState(""); // "male" | "female" | "other"
   const [result, setResult] = useState<BmiResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -21,8 +23,8 @@ export default function BmiPublicPage() {
     setError("");
     setResult(null);
 
-    if (!height || !weight) {
-      setError("Enter both height and weight.");
+    if (!height || !weight || !age || !gender) {
+      setError("Enter height, weight, age, and gender.");
       return;
     }
 
@@ -32,8 +34,10 @@ export default function BmiPublicPage() {
       const data = await apiFetch<BmiResult>("/api/bmi/calculate", {
         method: "POST",
         body: JSON.stringify({
-          heightCm: Number(height),
-          weightKg: Number(weight),
+          height: Number(height),
+          weight: Number(weight),
+          age: Number(age),
+          gender,
         }),
       });
       setResult(data);
@@ -81,6 +85,37 @@ export default function BmiPublicPage() {
                 max={400}
                 required
               />
+            </label>
+
+            <label style={fieldWrap}>
+              <span style={fieldLabel}>Age (years)</span>
+              <input
+                type="number"
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                placeholder="e.g. 28"
+                style={input}
+                min={1}
+                max={120}
+                required
+              />
+            </label>
+
+            <label style={fieldWrap}>
+              <span style={fieldLabel}>Gender</span>
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                style={input}
+                required
+              >
+                <option value="" disabled>
+                  Select gender
+                </option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
             </label>
 
             {error && <p style={errorText}>{error}</p>}

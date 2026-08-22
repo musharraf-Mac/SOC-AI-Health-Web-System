@@ -18,3 +18,5 @@ springdoc:
     enabled: true
   swagger-ui:
     enabled: true
+api:
+  key: ${API_KEY}

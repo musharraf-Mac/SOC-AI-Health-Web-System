@@ -6,3 +6,5 @@ spring:
       uri: ${MONGODB_URI}
 server:
   port: ${PORT}
+api:
+  key: ${API_KEY}

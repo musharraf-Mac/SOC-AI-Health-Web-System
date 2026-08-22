@@ -24,3 +24,106 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+/* In globals.css or a style tag */
+select {
+  color: #1B1B18 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  background: #FFFFFF !important;
+  border: 1px solid #DCD6C8 !important;
+  border-radius: 6px !important;
+  padding: 10px 12px !important;
+}
+
+select option {
+  color: #1B1B18 !important;
+  background: #FFFFFF !important;
+}
+
+select option:first-child {
+  color: #8A8577 !important;
+}
+
+/* 1. Force all text to be dark by default */
+* {
+  color: #1B1B18 !important;
+}
+
+/* 2. But keep placeholder text light */
+::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: #8A8577 !important;
+  opacity: 1 !important;
+}
+
+/* 3. Keep disabled text light */
+[disabled],
+[disabled] *,
+input:disabled,
+select:disabled,
+button:disabled {
+  color: #8A8577 !important;
+  opacity: 0.6 !important;
+}
+
+/* 4. Keep links with their own styling */
+a {
+  color: #0B3D3A !important;
+}
+
+a:hover {
+  color: #FF8A5B !important;
+}
+
+/* 5. Specific select dropdown fix */
+select,
+select option {
+  color: #1B1B18 !important;
+  background: #FFFFFF !important;
+}
+
+select option:first-child {
+  color: #8A8577 !important;
+}
+
+/* 6. Specific input fixes */
+input,
+textarea {
+  color: #1B1B18 !important;
+}
+
+/* 7. Keep error messages red */
+.error,
+.error *,
+[role="alert"],
+.text-red-500,
+.text-error {
+  color: #C0392B !important;
+}
+
+/* 8. Keep success messages green */
+.success,
+.success *,
+.text-green-500,
+.text-success {
+  color: #1E7E34 !important;
+}
+
+/* 9. Override for specific UI elements that should stay light */
+.text-muted,
+.text-gray,
+.text-light,
+.text-secondary,
+.muted,
+.subtext {
+  color: #8A8577 !important;
+}
+
+/* 10. Fix dropdown menu items */
+select option:hover,
+select option:focus,
+select option:active {
+  background: #F6F3EC !important;
+  color: #0B3D3A !important;
+}

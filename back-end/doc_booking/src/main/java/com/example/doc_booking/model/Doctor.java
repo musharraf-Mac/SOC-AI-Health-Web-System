@@ -1,10 +1,11 @@
 package com.example.doc_booking.model;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.List;
 
-@Document(collection = "doctors")
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Document(collection = "doctor")
 public class Doctor {
     @Id
     private String id;

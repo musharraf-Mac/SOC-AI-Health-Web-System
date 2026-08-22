@@ -1,17 +1,26 @@
 package com.example.doctor_page.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.io.File;
-import java.nio.file.Files;
 import java.util.List;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.doctor_page.model.Patient;
+import com.example.doctor_page.model.Prescription;
+import com.example.doctor_page.repository.PatientRepository;
+import com.example.doctor_page.repository.PrescriptionRepository;
+import com.example.doctor_page.service.PrescriptionService;
 
 @RestController
-@RequestMapping("/doctor")
-@CrossOrigin(origins = "*")
+@RequestMapping("/api/doctor")
 public class DoctorController {
 
     @Autowired
@@ -23,102 +32,56 @@ public class DoctorController {
     @Autowired
     private PrescriptionService prescriptionService;
 
-
     // =========================================================
-    // 1. Get all booked patients
+    // 1. Get all patients
     // =========================================================
     @GetMapping("/patients")
     public List<Patient> getAllPatients() {
         return patientRepo.findAll();
     }
 
-
     // =========================================================
-    // 2. Get patient by email
+    // 2. Get patient by token number
     // =========================================================
-    @GetMapping("/patients/{email}")
-    public Patient getPatient(@PathVariable String email) {
-        return patientRepo.findByEmail(email);
+    @GetMapping("/patients/{tokenNumber}")
+    public ResponseEntity<?> getPatient(@PathVariable String tokenNumber) {
+        Optional<Patient> patient = patientRepo.findByTokenNumber(tokenNumber);
+        if (patient.isPresent()) {
+            return ResponseEntity.ok(patient.get());
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body("Patient not found with token number: " + tokenNumber);
+        }
     }
 
-
     // =========================================================
-    // 3. Save prescription + generate Webpage + PDF + QR
+    // 3. Save prescription
     // =========================================================
     @PostMapping("/prescriptions")
-    public Prescription savePrescription(
-            @RequestBody Prescription prescription) throws Exception {
+    public ResponseEntity<?> savePrescription(@RequestBody Prescription prescription) {
+        try {
+            // Optional: Validate patient exists
+            List<Patient> patients = patientRepo.findByPatientEmail(prescription.getPatientEmail());
+            if (patients.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Patient not found with email: " + prescription.getPatientEmail());
+            }
 
-        // -----------------------------------------------------
-        // Step 1: Generate webpage
-        // -----------------------------------------------------
-        String url = prescriptionService.generateWebPage(prescription);
-
-        // Save webpage URL into prescription object
-        prescription.setUrl(url);
-
-
-        // -----------------------------------------------------
-        // Step 2: Generate PDF
-        // -----------------------------------------------------
-        String pdfPath = prescriptionService.generatePdf(prescription);
-
-        // Save PDF path
-        prescription.setPdfPath(pdfPath);
-
-
-        // -----------------------------------------------------
-        // Step 3: Generate QR Code
-        // -----------------------------------------------------
-        String qrPath = prescriptionService.generateQr(prescription);
-
-        // Save QR path
-        prescription.setQrCode(qrPath);
-
-
-        // -----------------------------------------------------
-        // Step 4: Save prescription into MongoDB
-        // -----------------------------------------------------
-        return prescriptionRepo.save(prescription);
-    }
-
-
-    // =========================================================
-    // 4. Retrieve prescriptions by patient email
-    // =========================================================
-    @GetMapping("/prescriptions/{email}")
-    public List<Prescription> getPrescriptions(
-            @PathVariable String email) {
-
-        return prescriptionRepo.findByPatientEmail(email);
-    }
-
-
-    // =========================================================
-    // 5. Open generated prescription webpage
-    // =========================================================
-    @GetMapping(
-            value = "/webpage/{fileName}",
-            produces = MediaType.TEXT_HTML_VALUE
-    )
-    public ResponseEntity<String> getWebPage(
-            @PathVariable String fileName) throws Exception {
-
-        // Find file inside webpages folder
-        File file = new File("webpages", fileName);
-
-
-        // If file does not exist
-        if (!file.exists()) {
-            return ResponseEntity.notFound().build();
+           
+            Prescription saved = prescriptionRepo.save(prescription);
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error saving prescription: " + e.getMessage());
         }
+    }
 
-
-        // Read HTML file
-        String content = Files.readString(file.toPath());
-
-
-        // Return HTML webpage
-        return ResponseEntity.ok(content);
+    // =========================================================
+    // 4. Get prescriptions by patient email
+    // =========================================================
+    @GetMapping("/prescriptions/{patientEmail}")
+    public List<Prescription> getPrescriptions(@PathVariable String patientEmail) {
+        return prescriptionRepo.findByPatientEmail(patientEmail);
     }
 }
