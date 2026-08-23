@@ -200,7 +200,6 @@ Each backend folder is an independent Spring Boot Maven project with its own `Do
 
 ## Known Limitations
 
-- MongoDB Atlas network access is currently open (`0.0.0.0/0`) for development convenience.
 - OCR accuracy depends on scan quality; low-resolution or handwritten reports may need manual correction.
 - AI-generated report explanations are general information only, not a diagnostic opinion.
 - Logout is client-side token removal; JWTs remain technically valid until expiry (1 hour) even after logout.
