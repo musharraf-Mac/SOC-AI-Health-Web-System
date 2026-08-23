@@ -36,13 +36,13 @@ Every request from the client goes through the Gateway. The Gateway validates th
 
 | Service | Port | Owner | Responsibility |
 |---|---|---|---|
-| Client (Next.js) | 3000 | [Name] | Unified web interface |
-| API Gateway | 8087 | [Name] | Routing, JWT validation, CORS, rate limiting |
-| Auth Service | 8081 | [Name] | Registration, login, JWT issuance, profile, logout, account deletion |
-| Appointment Service (doc_booking) | 8082 | [Name] | Booking, token numbers, doctor availability |
-| Lab Report Service | 8083 | [Name] | Report upload, OCR extraction, AI explanation |
-| BMI Service | 8084 | [Name] | Public + authenticated BMI calculation, history |
-| Doctor / Prescription Service | 8086 | [Name] | Doctor queue, prescriptions |
+| Client (Next.js) | 3000 | Musharraf-mac | Unified web interface |
+| API Gateway | 8087 | musharraf-mac | Routing, JWT validation, CORS, rate limiting |
+| Auth Service | 8081 | musharraf-mac | Registration, login, JWT issuance, profile, logout, account deletion |
+| Appointment Service (doc_booking) | 8082 | Abisha | Booking, token numbers, doctor availability |
+| Lab Report Service | 8083 | Niroshini2002 | Report upload, OCR extraction, AI explanation |
+| BMI Service | 8084 | Deva-0907 | Public + authenticated BMI calculation, history |
+| Doctor / Prescription Service | 8086 | Theebapriya | Doctor queue, prescriptions |
 | Redis | 6379 | — | Backing store for Gateway rate limiting |
 
 ---
