@@ -239,6 +239,26 @@ export default function PatientDashboard() {
     document.body.removeChild(link);
   };
 
+  // Delete Prescription Handler
+  const handleDeletePrescription = async (prescriptionId: string) => {
+  if (!confirm("Are you sure you want to delete this prescription?")) {
+    return;
+  }
+
+  try {
+    await apiFetch(`/api/doc_booking/delbooking/${prescriptionId}`, {
+      method: "DELETE",
+    });
+    
+    // Refresh prescriptions list
+    fetchPrescriptions();
+    setMessage("Prescription deleted successfully");
+  } catch (error) {
+    console.error("Error deleting prescription:", error);
+    setMessage("Failed to delete prescription");
+  }
+};
+
   // ============ Loading State ============
   if (!user) return <div style={{ padding: 40, textAlign: "center" }}>Loading…</div>;
 
@@ -590,6 +610,7 @@ export default function PatientDashboard() {
                       <span style={{ fontWeight: "bold", color: "#0B3D3A", fontSize: 16 }}>
                         #{b.tokenNumber}
                       </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span
                         style={{
                           marginLeft: 12,
@@ -602,6 +623,30 @@ export default function PatientDashboard() {
                       >
                         {b.status}
                       </span>
+                      {/* Delete button for each booking */}
+                      <button
+                onClick={() => handleDeletePrescription(p.id)}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: 6,
+                  border: "none",
+                  background: "#FDE8E8",
+                  color: "#C62828",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  transition: "background 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#F5C6C6";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#FDE8E8";
+                }}
+                title="Delete Prescription"
+              >
+                🗑️
+              </button>
+                      </div>
                     </div>
                     <p style={{ margin: "4px 0 0 0", fontSize: 11, color: "#8A8577" }}>
                       {new Date(b.createdAt).toLocaleDateString()}
@@ -647,6 +692,7 @@ export default function PatientDashboard() {
                         {p.doctorEmail}
                       </p>
                     </div>
+                    
                     <span
                       style={{
                         padding: "2px 12px",
@@ -657,7 +703,8 @@ export default function PatientDashboard() {
                       }}
                     >
                       {p.status || "ACTIVE"}
-                    </span>
+                    </span>                   
+                  
                   </div>
 
                   <p style={{ margin: "6px 0 0 0", fontSize: 14, color: "#1B1B18" }}>
