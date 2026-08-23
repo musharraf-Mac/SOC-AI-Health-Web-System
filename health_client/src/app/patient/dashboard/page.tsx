@@ -193,7 +193,6 @@ export default function PatientDashboard() {
     try {
       const booking = await apiFetch("/api/doc_booking/book", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           patientEmail,
           patientName: user?.fullname || "Patient",
@@ -504,7 +503,7 @@ export default function PatientDashboard() {
                 marginTop: 16,
                 padding: "10px 24px",
                 background: "#0B3D3A",
-                color: "#FFF",
+                color: "#FFFFFF",
                 border: "none",
                 borderRadius: 6,
                 fontWeight: 600,

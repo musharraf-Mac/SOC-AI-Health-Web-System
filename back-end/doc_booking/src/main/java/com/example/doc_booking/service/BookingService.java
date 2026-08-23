@@ -1,13 +1,15 @@
 package com.example.doc_booking.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.example.doc_booking.dto.BookingRequest;
 import com.example.doc_booking.model.Booking;
 import com.example.doc_booking.model.Doctor;
 import com.example.doc_booking.repository.BookingRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 public class BookingService {
@@ -58,4 +60,11 @@ public class BookingService {
         long count = bookingRepository.findByDoctorEmailAndBookingDate(doctorEmail, date).size() + 1;
         return "TKN-" + datePrefix + "-" + String.format("%03d", count);
     }
+    public boolean existsById(String id) {  
+    return bookingRepository.existsById(id);
+}
+
+public void deleteBooking(String id) {  
+    bookingRepository.deleteById(id);
+}
 }
