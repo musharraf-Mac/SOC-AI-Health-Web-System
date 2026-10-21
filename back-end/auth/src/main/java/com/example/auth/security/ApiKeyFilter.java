@@ -20,7 +20,7 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
     // Paths that should skip API key check (e.g. health checks, Swagger docs)
     private static final List<String> EXCLUDED_PATHS = List.of(
-        "/swagger-ui", "/v3/api-docs", "/actuator"
+        "/swagger-ui", "/v3/api-docs", "/actuator","/swagger-ui.html", "swagger-ui/**"
     );
 
     @Override
