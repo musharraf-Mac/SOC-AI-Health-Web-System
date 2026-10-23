@@ -48,3 +48,6 @@ server:
 
 jwt:
   secret: ${JWT_SECRET}
+
+frontend:
+  url: ${FRONT_END}
