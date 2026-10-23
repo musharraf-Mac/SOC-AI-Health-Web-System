@@ -111,7 +111,7 @@ export default function PatientDashboard() {
   // Fetch Doctors from doc_booking service
   const fetchDoctors = async () => {
     try {
-      const data = await apiFetch("/api/doc_booking/doctors");
+      const data = await apiFetch<Doctor[]>("/api/doc_booking/doctors");
       setDoctors(data);
     } catch (error) {
       console.error("Error fetching doctors:", error);
@@ -122,7 +122,7 @@ export default function PatientDashboard() {
   // Fetch Bookings from doc_booking service
   const fetchBookings = async () => {
     try {
-      const data = await apiFetch(`/api/doc_booking/patient/${patientEmail}/bookings`);
+      const data = await apiFetch<Booking[]>(`/api/doc_booking/patient/${patientEmail}/bookings`);
       setBookings(data);
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -132,7 +132,7 @@ export default function PatientDashboard() {
   // Fetch Lab Reports from lab_rep service
   const fetchLabReports = async () => {
     try {
-      const data = await apiFetch(`/api/reports/patient/${patientEmail}`);
+      const data = await apiFetch<LabReport[]>(`/api/reports/patient/${patientEmail}`);
       setLabReports(data);
     } catch (error) {
       console.error("Error fetching lab reports:", error);
@@ -142,7 +142,7 @@ export default function PatientDashboard() {
   // Fetch Prescriptions from doctor service
   const fetchPrescriptions = async () => {
     try {
-      const data = await apiFetch(`/api/doctor/prescriptions/me`, {
+      const data = await apiFetch<Prescription[]>(`/api/doctor/prescriptions/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPrescriptions(data);

@@ -26,7 +26,7 @@ export default function ReportDetailPage() {
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        const data = await apiFetch(`/api/reports/${reportId}`);
+        const data = await apiFetch<LabReport>(`/api/reports/${reportId}`);
         setReport(data);
       } catch (err) {
         setError("Failed to load report");
