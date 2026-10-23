@@ -8,7 +8,7 @@ export async function apiFetch<T = Record<string, string>>(
       ...(isFormdata ? {} : { "Content-Type": "application/json" }),
       ...options.headers,
     };
- const response = await fetch(`http://localhost:8087${path}`,  
+ const response = await fetch(`http://localhost:8087${path}`,
   {
       ...options,
       credentials: "include",
