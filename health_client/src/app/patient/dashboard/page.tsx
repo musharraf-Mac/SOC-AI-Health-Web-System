@@ -115,7 +115,7 @@ export default function PatientDashboard() {
       setDoctors(data);
     } catch (error) {
       console.error("Error fetching doctors:", error);
-      setMessage("❌ Could not load doctors.");
+      setMessage("Could not load doctors.");
     }
   };
 
@@ -531,7 +531,7 @@ export default function PatientDashboard() {
                 opacity: loading ? 0.6 : 1,
               }}
             >
-              {loading ? "⏳ Booking..." : "✅ Book Appointment"}
+              {loading ? "⏳ Booking..." : "Book Appointment"}
             </button>
 
             {message && (
