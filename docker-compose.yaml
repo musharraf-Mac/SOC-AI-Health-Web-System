@@ -97,6 +97,13 @@ services:
       - API_KEY=${API_KEY}
       - DATABASE=${DATABASE}
       - PORT=8087
+      - FRONT_END=${FRONT_END}
+      - AUTH_SERVICE_URL=http://auth-service:8081
+      - APPOINTMENT_SERVICE=http://appointment-service:8082
+      - LAB_REPORT_SERVICE=http://lab-report-service:8083
+      - BMI_SERVICE=http://bmi-service:8084
+      - DOCTOR_SERVICE=http://doctor-service:8086
+      - REDIS_HOST=redis
     dns:
       - 8.8.8.8
       - 8.8.4.4
