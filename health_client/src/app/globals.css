@@ -126,3 +126,7 @@ select option:active {
   background: #F6F3EC !important;
   color: #0B3D3A !important;
 }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
