@@ -45,9 +45,8 @@ select option:first-child {
 }
 
 /* 1. Force all text to be dark by default */
-* {
-  color: #1B1B18 !important;
-}
+/* Removed global * override to allow individual element styling */
+
 
 /* 2. But keep placeholder text light */
 ::placeholder,
