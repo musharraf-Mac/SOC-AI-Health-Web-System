@@ -625,7 +625,7 @@ export default function PatientDashboard() {
                       </span>
                       {/* Delete button for each booking */}
                       <button
-                onClick={() => handleDeletePrescription(p.id)}
+                onClick={() => handleDeletePrescription(b.id)}
                 style={{
                   padding: "4px 10px",
                   borderRadius: 6,
