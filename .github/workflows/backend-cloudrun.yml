@@ -1,0 +1,170 @@
+# Place at: .github/workflows/backend-cloudrun.yml
+name: Backend CI/CD (Cloud Run)
+
+on:
+  pull_request:
+    paths: ["back-end/**"]
+  push:
+    branches: [main]
+    paths: ["back-end/**"]
+  workflow_dispatch:   # manual run = build + deploy ALL services (use for the first deploy)
+
+permissions:
+  contents: read
+  id-token: write      # required for Workload Identity Federation (no JSON keys)
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  PROJECT_NUMBER: ${{ vars.GCP_PROJECT_NUMBER }}
+  REGION: asia-south1
+  AR_REPO: clinic
+
+jobs:
+  # 1. Work out which service folders changed
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.all.outputs.services || steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: all
+        if: github.event_name == 'workflow_dispatch'
+        run: echo 'services=["auth","doc_booking","lab_rep","bmi","doctor_page","apigateway"]' >> "$GITHUB_OUTPUT"
+
+      - id: filter
+        if: github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            auth: 'back-end/auth/**'
+            doc_booking: 'back-end/doc_booking/**'
+            lab_rep: 'back-end/lab_rep/**'
+            bmi: 'back-end/bmi/**'
+            doctor_page: 'back-end/doctor_page/**'
+            apigateway: 'back-end/apigateway/**'
+
+  # 2. Build + test each changed service (runs on PRs too)
+  test:
+    needs: changes
+    if: needs.changes.outputs.services != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.changes.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "26"      # keep in sync with <java.version> in your poms
+          cache: maven
+
+      - name: Build and test
+        working-directory: back-end/${{ matrix.service }}
+        env:
+          # Dummy values so placeholder tests (contextLoads) can resolve ${...} properties
+          JWT_SECRET: ci-only-secret-key-at-least-32-characters
+          MONGODB_URI: mongodb://localhost:27017/ci
+          DATABASE: ci
+          API_KEY: ci-key
+          GEMINI_API_KEY: ci-key
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp verify
+
+  # 3. Build image, push to Artifact Registry, deploy to Cloud Run (main / manual only)
+  deploy:
+    needs: [changes, test]
+    if: github.event_name != 'pull_request' && needs.changes.outputs.services != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.changes.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Resolve names
+        id: names
+        run: |
+          SVC="${{ matrix.service }}"
+          RUN_NAME="${SVC//_/-}"      # Cloud Run names cannot contain underscores
+          echo "run_name=${RUN_NAME}" >> "$GITHUB_OUTPUT"
+          echo "image=${REGION}-docker.pkg.dev/${PROJECT_ID}/${AR_REPO}/${RUN_NAME}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: back-end/${{ matrix.service }}
+          push: true
+          tags: ${{ steps.names.outputs.image }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+      - name: Deploy to Cloud Run
+        env:
+          SERVICE_KEY: ${{ matrix.service }}
+          RUN_NAME: ${{ steps.names.outputs.run_name }}
+          IMAGE: ${{ steps.names.outputs.image }}
+          CORS_ORIGIN: ${{ vars.NETLIFY_URL }}
+          REDIS_HOST: ${{ vars.REDIS_HOST }}
+          REDIS_PORT: ${{ vars.REDIS_PORT }}
+        run: |
+          set -euo pipefail
+
+          # Cloud Run URLs are deterministic: https://<service>-<project-number>.<region>.run.app
+          svc_url() { echo "https://$1-${PROJECT_NUMBER}.${REGION}.run.app"; }
+
+          JVM="-XX:MaxRAMPercentage=75 -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+          MEMORY=512Mi
+          SECRETS="JWT_SECRET=jwt-secret:latest,MONGODB_URI=mongodb-uri:latest,API_KEY=api-key:latest"
+          ENVVARS="^@^DATABASE=soc_health_db@JAVA_TOOL_OPTIONS=${JVM}"
+
+          case "$SERVICE_KEY" in
+            lab_rep)
+              MEMORY=1Gi
+              SECRETS="${SECRETS},GEMINI_API_KEY=gemini-api-key:latest"
+              ;;
+            apigateway)
+              # Gateway has no database; it needs the downstream URLs, CORS origin and Redis
+              SECRETS="JWT_SECRET=jwt-secret:latest,API_KEY=api-key:latest,REDIS_PASSWORD=redis-password:latest"
+              ENVVARS="^@^JAVA_TOOL_OPTIONS=${JVM}"
+              ENVVARS="${ENVVARS}@AUTH_SERVICE_URL=$(svc_url auth)"
+              ENVVARS="${ENVVARS}@BOOKING_SERVICE_URL=$(svc_url doc-booking)"
+              ENVVARS="${ENVVARS}@REPORTS_SERVICE_URL=$(svc_url lab-rep)"
+              ENVVARS="${ENVVARS}@BMI_SERVICE_URL=$(svc_url bmi)"
+              ENVVARS="${ENVVARS}@DOCTOR_SERVICE_URL=$(svc_url doctor-page)"
+              ENVVARS="${ENVVARS}@CORS_ALLOWED_ORIGIN=${CORS_ORIGIN}"
+              ENVVARS="${ENVVARS}@REDIS_HOST=${REDIS_HOST}@REDIS_PORT=${REDIS_PORT:-6379}@REDIS_SSL=true"
+              ;;
+          esac
+
+          # NOTE: do not set PORT - Cloud Run injects it and rejects it as a custom variable.
+          gcloud run deploy "$RUN_NAME" \
+            --image "$IMAGE" \
+            --region "$REGION" \
+            --allow-unauthenticated \
+            --cpu 1 --cpu-boost \
+            --memory "$MEMORY" \
+            --min-instances 0 --max-instances 3 \
+            --set-secrets "$SECRETS" \
+            --set-env-vars "$ENVVARS"
+
+          echo "### ${RUN_NAME}" >> "$GITHUB_STEP_SUMMARY"
+          gcloud run services describe "$RUN_NAME" --region "$REGION" \
+            --format='value(status.url)' >> "$GITHUB_STEP_SUMMARY"
