@@ -1,0 +1,10 @@
+[[redirects]]
+  from = "/*"
+  to = "/:splat"
+  status = 200
+
+# Handle trailing slashes for consistency
+[[redirects]]
+  from = "/*.html"
+  to = "/:splat/index.html"
+  status = 200
