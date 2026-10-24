@@ -1,0 +1,132 @@
+services:
+  auth-service:
+    build: ./auth
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      MONGODB_URI: ${MONGODB_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      DATABASE: ${DATABASE}
+      API_KEY: ${API_KEY}
+      PORT: 8081
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - clinic-net
+
+  appointment-service:
+    build: ./doc_booking
+    container_name: appointment-service
+    ports:
+      - "8082:8082"
+    environment:
+      MONGODB_URI: ${MONGODB_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      DATABASE: ${DATABASE}
+      API_KEY: ${API_KEY}
+      PORT: 8082
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - clinic-net
+
+  lab-report-service:
+    build: ./lab_rep
+    container_name: lab-report-service
+    ports:
+      - "8083:8083"
+    environment:
+      MONGODB_URI: ${MONGODB_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      DATABASE: ${DATABASE}
+      API_KEY: ${API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      PORT: 8083
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - clinic-net
+
+  bmi-service:
+    build: ./bmi
+    container_name: bmi-service
+    ports:
+      - "8084:8084"
+    environment:
+      MONGODB_URI: ${MONGODB_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      API_KEY: ${API_KEY}
+      DATABASE: ${DATABASE}
+      PORT: 8084
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - clinic-net
+
+  doctor-service:
+    build: ./doctor_page
+    container_name: doctor-service
+    ports:
+      - "8086:8086"
+    environment:
+      MONGODB_URI: ${MONGODB_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      DATABASE: ${DATABASE}
+      API_KEY: ${API_KEY}
+      PORT: 8086
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - clinic-net
+
+  api-gateway:
+    build: ./apigateway
+    container_name: api-gateway
+    ports:
+      - "8087:8087"
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      API_KEY: ${API_KEY}
+      DATABASE: ${DATABASE}
+      PORT: 8087
+      FRONT_END: ${FRONT_END:-https://health-web-system.netlify.app/}
+      FRONT_END_LOCAL: ${FRONT_END_LOCAL:-http://localhost:3000}
+      AUTH_SERVICE_URL: http://auth-service:8081
+      APPOINTMENT_SERVICE: http://appointment-service:8082
+      LAB_REPORT_SERVICE: http://lab-report-service:8083
+      BMI_SERVICE: http://bmi-service:8084
+      DOCTOR_SERVICE: http://doctor-service:8086
+      REDIS_HOST: redis
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    depends_on:
+      - auth-service
+      - appointment-service
+      - lab-report-service
+      - bmi-service
+      - doctor-service
+      - redis
+    networks:
+      - clinic-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - clinic-net
+
+networks:
+  clinic-net:
+    driver: bridge
