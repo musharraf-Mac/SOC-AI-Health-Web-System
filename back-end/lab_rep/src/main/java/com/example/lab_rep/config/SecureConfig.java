@@ -27,7 +27,7 @@ public class SecureConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Allow public endpoints
-                .requestMatchers(                    
+                .requestMatchers(
                     "/swagger-ui/**",
                     "/api/reports/**",
                     "/v3/api-docs/**",

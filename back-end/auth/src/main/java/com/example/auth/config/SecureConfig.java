@@ -54,7 +54,7 @@ public class SecureConfig {
             
         return http.build();
     }
-    /* 
+    /*
     String allowedOrigin = "http://localhost:3000"; // Needs to change with Real front end URL
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
