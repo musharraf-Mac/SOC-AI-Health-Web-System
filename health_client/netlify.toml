@@ -1,3 +1,5 @@
+# Netlify configuration for Next.js App Router
+
 [[redirects]]
   from = "/*"
   to = "/:splat"
@@ -7,4 +9,10 @@
 [[redirects]]
   from = "/*.html"
   to = "/:splat/index.html"
+  status = 200
+
+# Copy Next.js output folder if it exists, otherwise use default publish directory
+[[redirects]]
+  from = "/404.html"
+  to = "/404.html"
   status = 200
