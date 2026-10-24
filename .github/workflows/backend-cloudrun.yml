@@ -150,6 +150,7 @@ jobs:
               ENVVARS="${ENVVARS}@BMI_SERVICE_URL=$(svc_url bmi)"
               ENVVARS="${ENVVARS}@DOCTOR_SERVICE_URL=$(svc_url doctor-page)"
               ENVVARS="${ENVVARS}@CORS_ALLOWED_ORIGIN=${CORS_ORIGIN}"
+              ENVVARS="${ENVVARS}@FRONT_END=${CORS_ORIGIN}"  # Netlify URL for CORS configuration
               ENVVARS="${ENVVARS}@REDIS_HOST=${REDIS_HOST}@REDIS_PORT=${REDIS_PORT:-6379}@REDIS_SSL=true"
               ;;
           esac

@@ -9,16 +9,8 @@ import org.springframework.core.annotation.Order;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
-import org.springframework.beans.factory.annotation.Value;
-
 @Configuration
 public class CorsConfig {
-
-    @Value("${frontend.url:https://health-web-system.netlify.app/}")
-    private String frontEndProduction;
-
-    @Value("${frontend.url.local:http://localhost:3000}")
-    private String frontEndLocal;
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -26,14 +18,24 @@ public class CorsConfig {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        // Allow both production Netlify URL and localhost for development
-        List<String> origins = List.of(frontEndProduction.trim().endsWith("/") ? frontEndProduction : frontEndProduction + "/",
-                                       frontEndLocal.trim().endsWith("/") ? frontEndLocal : frontEndLocal + "/");
+        // Read FRONT_END from environment variable (set in docker-compose or CI/CD)
+        String productionUrl = System.getenv("FRONT_END");
+        String developmentUrl = "http://localhost:3000";  // Default for local development
+
+        // Build list of allowed origins
+        List<String> origins = new java.util.ArrayList<>();
+
+        if (productionUrl != null && !productionUrl.trim().isEmpty()) {
+            origins.add(productionUrl.trim().endsWith("/") ? productionUrl : productionUrl + "/");
+        }
+
+        origins.add(developmentUrl);
+
+        // Optionally add wildcard for development testing (remove this line in strict production)
+        // Uncomment the next line if you need to allow any origin during development:
+        // origins.add("*");
 
         config.setAllowedOrigins(origins);
-        
-        config.addAllowedOriginPattern("*");
-
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"));
         config.setAllowCredentials(true);
