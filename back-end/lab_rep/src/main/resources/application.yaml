@@ -13,7 +13,7 @@ spring:
       enabled: false
 
 server:
-  port: ${PORT}
+  port: ${PORT:8085}
 
 gemini:
   api:
