@@ -9,7 +9,7 @@ data:
   mongodb:
     uri: ${MONGODB_URI}
 server:
-  port: ${PORT}
+  port: ${PORT:8084}
 
 jwt:
   secret: ${JWET_SECRET}
