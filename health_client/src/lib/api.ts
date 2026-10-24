@@ -4,16 +4,18 @@ export async function apiFetch<T = Record<string, string>>(
 ): Promise<T> {
   try{
     const isFormdata = options.body instanceof FormData;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8087';
+
     const headers: HeadersInit = {
       ...(isFormdata ? {} : { "Content-Type": "application/json" }),
       ...options.headers,
     };
- const response = await fetch(`http://localhost:8087${path}`,
-  {
-      ...options,
-      credentials: "include",
-      headers,
-    });
+    const response = await fetch(`${baseUrl}${path}`,
+     {
+        ...options,
+        credentials: "include",
+        headers,
+      });
 
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`);
