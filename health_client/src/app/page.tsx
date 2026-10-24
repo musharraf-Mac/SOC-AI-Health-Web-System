@@ -21,6 +21,8 @@ export default function HomePage() {
   return (
     <div
       style={{
+        width: "100%",
+        overflowX: "hidden",
         minHeight: "100vh",
         background: "#F6F3EC",
         color: "#1B1B18",
@@ -30,11 +32,11 @@ export default function HomePage() {
     >
       {/* NAV */}
       <header
+        className="home-header"
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "20px 32px",
           borderBottom: "1px solid #DCD6C8",
           position: "sticky",
           top: 0,
@@ -57,7 +59,7 @@ export default function HomePage() {
          </Link>
         </div>
 
-        <nav style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <nav className="home-nav" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <NavButton onClick={() => router.push("/bmi")}>BMI Check</NavButton>
           <NavButton onClick={() => router.push("/patient/dashboard")}>
             Book Appointment
@@ -117,6 +119,7 @@ export default function HomePage() {
 
       {/* HERO */}
       <section
+        className="home-hero"
         style={{
           maxWidth: "880px",
           margin: "0 auto",
@@ -137,7 +140,7 @@ export default function HomePage() {
         >
           Care, coordinated
         </p>
-        <h1
+        <h1 className="home-title"
           style={{
             fontFamily: "'Fraunces', Georgia, serif",
             fontSize: "clamp(36px, 5.5vw, 58px)",
@@ -215,10 +218,11 @@ export default function HomePage() {
 
       {/* HEARTBEAT DIVIDER — signature element */}
       <div
+        className="home-heartbeat"
         style={{
           maxWidth: "880px",
           margin: "40px auto 0",
-          padding: "0 32px",
+          padding: "0 16px",
         }}
       >
         <svg
@@ -245,10 +249,11 @@ export default function HomePage() {
 
       {/* FEATURE ROW */}
       <section
+        className="home-features"
         style={{
           maxWidth: "980px",
           margin: "0 auto",
-          padding: "24px 32px 100px",
+          padding: "24px 16px 72px",
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
           gap: "28px",

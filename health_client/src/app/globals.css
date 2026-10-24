@@ -24,6 +24,55 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Keep the landing page usable on narrow phone screens. */
+.home-header {
+  gap: 12px;
+  padding: 16px clamp(12px, 4vw, 32px) !important;
+}
+
+.home-nav {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .home-header {
+    justify-content: center !important;
+  }
+
+  .home-header > div {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+
+  .home-nav {
+    justify-content: center;
+    width: 100%;
+    gap: 2px !important;
+  }
+
+  .home-nav button {
+    padding: 8px 10px !important;
+    font-size: 13px !important;
+  }
+
+  .home-hero {
+    padding: 52px 16px 32px !important;
+  }
+
+  .home-title {
+    font-size: clamp(32px, 8vw, 42px) !important;
+    overflow-wrap: anywhere;
+  }
+
+  .home-heartbeat {
+    padding: 0 16px !important;
+  }
+
+  .home-features {
+    padding: 24px 16px 64px !important;
+  }
+}
 /* In globals.css or a style tag */
 select {
   color: #1B1B18 !important;
