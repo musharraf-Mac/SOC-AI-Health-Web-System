@@ -37,7 +37,7 @@ RUN addgroup --system --gid 1001 appgroup && \
 USER appuser
 
 # Expose port
-EXPOSE 8080
+EXPOSE 8085
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]

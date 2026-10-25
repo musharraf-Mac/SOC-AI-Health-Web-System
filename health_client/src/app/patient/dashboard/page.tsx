@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import { dotenv } from "dotenv";
 
+dotenv.config();
+const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8087";
 // ============ Types ============
 interface UserInfo {
   fullname: string;
@@ -225,14 +228,14 @@ export default function PatientDashboard() {
   // ============ View & Download PDF ============
   const viewFile = (fileId: string) => {
     window.open(
-      `http://localhost:8087/api/reports/${fileId}`,
+      `${backendUrl}/api/reports/${fileId}`,
       "_blank"
     );
   };
 
   const downloadFile = (fileId: string, filename: string) => {
     const link = document.createElement("a");
-    link.href = `http://localhost:8087/api/reports/${fileId}`;
+    link.href = `${backendUrl}/api/reports/${fileId}`;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
