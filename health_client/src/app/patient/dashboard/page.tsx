@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
-import { dotenv } from "dotenv";
 
-dotenv.config();
 const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8087";
 // ============ Types ============
 interface UserInfo {
