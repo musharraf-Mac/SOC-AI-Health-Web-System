@@ -15,10 +15,29 @@ spring:
 server:
   port: ${PORT:8083}
 
-gemini:
-  api:
-    key: ${GEMINI_API_KEY}
-    model: gemini-flash-latest
+reports:
+  tasks:
+    queue: ${REPORT_TASKS_QUEUE:}
+    service-url: ${REPORT_SERVICE_URL:}
+    service-account: ${REPORT_TASKS_SERVICE_ACCOUNT:}
+  storage:
+    bucket: ${GCS_BUCKET:}
+ai:
+  provider-order: ${AI_PROVIDER_ORDER:ollama,gemini,groq,openrouter}
+  ollama:
+    enabled: ${OLLAMA_ENABLED:true}
+    base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+    model: ${OLLAMA_MODEL:qwen3.5:4b}
+    timeout-seconds: ${OLLAMA_TIMEOUT_SECONDS:60}
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:gemini-2.5-flash}
+  groq:
+    api-key: ${GROQ_API_KEY:}
+    model: ${GROQ_MODEL:llama-3.3-70b-versatile}
+  openrouter:
+    api-key: ${OPENROUTER_API_KEY:}
+    model: ${OPENROUTER_MODEL:deepseek/deepseek-chat-v3.1}
 
 ocr:
   tessdata:

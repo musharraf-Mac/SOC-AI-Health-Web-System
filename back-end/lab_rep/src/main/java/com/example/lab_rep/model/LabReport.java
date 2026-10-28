@@ -18,9 +18,15 @@ public class LabReport {
     private long fileSize;
     /** MongoDB GridFS file id (stored in fs.files/fs.chunks), not a local path. */
     private String fileId;
+    private String reportObjectPath;
+    private String explanationObjectPath;
+    private String analysisProvider;
+    private String analysisModel;
+    private String analysisError;
     private String extractedText;
     private String analysisResult;
     private String status;
+    private LocalDateTime processingStartedAt;
     private LocalDateTime uploadedAt;
     private LocalDateTime processedAt;
 
@@ -43,6 +49,16 @@ public class LabReport {
         this.status = "PENDING";
     }
 
+    public String getReportObjectPath() { return reportObjectPath; }
+    public void setReportObjectPath(String value) { this.reportObjectPath = value; }
+    public String getExplanationObjectPath() { return explanationObjectPath; }
+    public void setExplanationObjectPath(String value) { this.explanationObjectPath = value; }
+    public String getAnalysisProvider() { return analysisProvider; }
+    public void setAnalysisProvider(String value) { this.analysisProvider = value; }
+    public String getAnalysisModel() { return analysisModel; }
+    public void setAnalysisModel(String value) { this.analysisModel = value; }
+    public String getAnalysisError() { return analysisError; }
+    public void setAnalysisError(String value) { this.analysisError = value; }
     // Getters and Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
