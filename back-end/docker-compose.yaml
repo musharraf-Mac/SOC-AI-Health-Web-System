@@ -43,11 +43,26 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       DATABASE: ${DATABASE}
       API_KEY: ${API_KEY}
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GCS_BUCKET: ${GCS_BUCKET}
+      GOOGLE_APPLICATION_CREDENTIALS: /var/run/google/adc.json
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3.5:4b}
+      OLLAMA_ENABLED: ${OLLAMA_ENABLED:-true}
+      AI_PROVIDER_ORDER: ${AI_PROVIDER_ORDER:-ollama,gemini,groq,openrouter}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       PORT: 8083
     dns:
       - 8.8.8.8
       - 8.8.4.4
+    volumes:
+      - type: bind
+        source: ${GCP_ADC_FILE:-./gcp-adc.json}
+        target: /var/run/google/adc.json
+        read_only: true
+        bind:
+          create_host_path: false
     networks:
       - clinic-net
 
