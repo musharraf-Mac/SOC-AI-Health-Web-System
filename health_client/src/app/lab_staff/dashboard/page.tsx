@@ -220,28 +220,51 @@ export default function LabStaffDashboard() {
         ) : (
           <div style={tableContainer}>
             <table style={table}>
-              <thead style={{ color: "black" }}>
+              <thead style={{ color: "#1B1B18" }}>
                 <tr>
-                  <th className="font-bold text-black">Patient</th>
-                  <th className="text-black font-bold">Email</th>
-                  <th className="text-black font-bold">Report Type</th>
-                  <th className="text-black font-bold">Status</th>
-                  <th className="text-black font-bold">Uploaded</th>
-                  <th className="text-black font-bold">Actions</th>
+                  <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "left", width: "15%" }}>
+                    File ID / SR#
+                  </th>
+                  <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "left", width: "18%" }}>
+                    Patient
+                  </th>
+                  <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "left", width: "15%" }}>
+                    Email
+                  </th>
+                  <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "left", width: "18%" }}>
+                    Report Type
+                  </th>
+                  <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "center", width: "10%" }}>
+                    Status
+                  </th>
+                  <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "center", width: "14%" }}>
+                    Uploaded
+                  </th>
+                  <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "center", width: "15%" }}>
+                    Actions
+                  </th>
                 </tr>
               </thead>
-              <tbody>
-                {reports.map((report) => (
-                  <tr key={report.id}>
-                    <td style={tdName}>{report.patientName}</td>
-                    <td style={tdEmail}>{report.patientEmail}</td>
-                    <td>
-                      <span style={reportTypeBadge}>{report.reportType}</span>
+              <tbody style={{ color: "#0B3D3A" }}>
+                {reports.map((report, index) => (
+                  <tr
+                    key={report.id}
+                    style={{ color: "inherit", fontSize: "14px" }}
+                  >
+                    <td className="font-semibold text-black" style={{ padding: "12px 8px" }}>
+                      {index + 1}
                     </td>
-                    <td>{getStatusBadge(report.status)}</td>
-                    <td>{formatDate(report.uploadedAt)}</td>
+                    <td style={tdName} style={{ padding: "12px 8px" }}>{report.patientName}</td>
+                    <td style={{ ...tdEmail, padding: "12px 8px" }}>{report.patientEmail}</td>
                     <td>
-                      <div style={actionButtons}>
+                      <span style={{ ...reportTypeBadge, padding: "6px 12px", fontSize: "13px", borderRadius: "8px", textAlign: "center" }}>
+                        {report.reportType}
+                      </span>
+                    </td>
+                    <td style={{ padding: "12px 8px" }}>{getStatusBadge(report.status)}</td>
+                    <td style={{ padding: "12px 8px", whiteSpace: "nowrap", textAlign: "center" }}>{formatDate(report.uploadedAt)}</td>
+                    <td style={{ padding: "12px 8px" }}>
+                      <div className="flex justify-center gap-3">
                         <button
                           onClick={() => router.push(`/lab_staff/reports/${report.fileId}`)}
                           style={viewBtn}
@@ -254,7 +277,7 @@ export default function LabStaffDashboard() {
                             setSelectedReport(report);
                             setShowDeleteModal(true);
                           }}
-                          style={deleteBtn}
+                          style={{ ...deleteBtn, padding: "6px 10px", fontSize: "14px" }}
                           title="Delete Report"
                           disabled={deleteLoading === report.id}
                         >
