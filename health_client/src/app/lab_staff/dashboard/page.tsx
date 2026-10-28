@@ -220,14 +220,14 @@ export default function LabStaffDashboard() {
         ) : (
           <div style={tableContainer}>
             <table style={table}>
-              <thead>
+              <thead style={{ color: "black" }}>
                 <tr>
-                  <th>Patient</th>
-                  <th>Email</th>
-                  <th>Report Type</th>
-                  <th>Status</th>
-                  <th>Uploaded</th>
-                  <th>Actions</th>
+                  <th className="font-bold text-black">Patient</th>
+                  <th className="text-black font-bold">Email</th>
+                  <th className="text-black font-bold">Report Type</th>
+                  <th className="text-black font-bold">Status</th>
+                  <th className="text-black font-bold">Uploaded</th>
+                  <th className="text-black font-bold">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -581,6 +581,7 @@ const tableContainer: React.CSSProperties = {
 const table: React.CSSProperties = {
   width: "100%",
   borderCollapse: "collapse",
+  color:"black"
 };
 
 const tdName: React.CSSProperties = {
