@@ -446,7 +446,6 @@ const headerRight: React.CSSProperties = {
   gap: "12px",
 };
 
-// ⭐ UPLOAD BUTTON STYLE
 const uploadBtn: React.CSSProperties = {
   padding: "10px 20px",
   borderRadius: "8px",
@@ -576,6 +575,7 @@ const tableContainer: React.CSSProperties = {
   borderRadius: "12px",
   border: "1px solid #DCD6C8",
   overflow: "hidden",
+  color:"black"
 };
 
 const table: React.CSSProperties = {
