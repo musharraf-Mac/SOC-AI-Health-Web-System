@@ -16,12 +16,12 @@ public class OcrService {
             String text = stripper.getText(document);
 
             if (text == null || text.trim().isEmpty()) {
-                return "No extractable text found. The PDF may be a scanned image without OCR support yet.";
+                throw new IllegalArgumentException("Scanned PDFs require OCR; upload a PDF containing selectable text.");
             }
             return text.trim();
 
         } catch (IOException e) {
-            return "Failed to extract text from PDF: " + e.getMessage();
+            throw new IllegalArgumentException("The file is not a readable PDF.", e);
         }
     }
 }
