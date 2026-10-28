@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, reportFileUrl } from "@/lib/api";
 
 const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8087";
 // ============ Types ============
@@ -224,20 +224,27 @@ export default function PatientDashboard() {
   };
 
   // ============ View & Download PDF ============
-  const viewFile = (fileId: string) => {
-    window.open(
-      `${backendUrl}/api/reports/${fileId}`,
-      "_blank"
-    );
+  const viewFile = async (fileId: string) => {
+    const tab = window.open("", "_blank");
+    try {
+      const url = await reportFileUrl(fileId);
+      if (tab) tab.location.href = url;
+      setTimeout(() => URL.revokeObjectURL(url), 120000);
+    } catch {
+      tab?.close();
+      setMessage("Unable to open report. Please sign in and try again.");
+    }
   };
 
-  const downloadFile = (fileId: string, filename: string) => {
-    const link = document.createElement("a");
-    link.href = `${backendUrl}/api/reports/${fileId}`;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const downloadFile = async (fileId: string, filename: string) => {
+    try {
+      const url = await reportFileUrl(fileId);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch { setMessage("Unable to download report. Please try again."); }
   };
 
   // Delete Prescription Handler

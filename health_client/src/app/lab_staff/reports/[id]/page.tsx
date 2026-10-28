@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, reportFileUrl } from "@/lib/api";
 
 interface LabReport {
   id: string;
@@ -13,6 +13,9 @@ interface LabReport {
   status: string;
   uploadedAt: string;
   analysisResult?: string;
+  analysisError?: string;
+  analysisProvider?: string;
+  analysisModel?: string;
 }
 
 export default function ReportDetailPage() {
@@ -53,10 +56,26 @@ export default function ReportDetailPage() {
         <div style={detailRow}><strong>Email:</strong> {report.patientEmail}</div>
         <div style={detailRow}><strong>Status:</strong> {report.status}</div>
         <div style={detailRow}><strong>Uploaded:</strong> {new Date(report.uploadedAt).toLocaleString()}</div>
+        <button onClick={async () => {
+          const tab = window.open("", "_blank");
+          try {
+            const url = await reportFileUrl(report.id);
+            if (tab) tab.location.href = url;
+            setTimeout(() => URL.revokeObjectURL(url), 120000);
+          } catch { tab?.close(); setError("Unable to open report"); }
+        }}>Open original PDF</button>
+        {report.analysisError && <p role="alert">{report.analysisError}</p>}
+        {report.status === "FAILED" && <button disabled={loading} onClick={async () => {
+          setLoading(true);
+          try { setReport(await apiFetch<LabReport>(`/api/reports/${report.id}/retry`, { method: "POST" })); }
+          catch { setError("Retry failed. Please try again."); }
+          finally { setLoading(false); }
+        }}>Retry explanation</button>}
         {report.analysisResult && (
           <div style={analysisSection}>
             <h3>Analysis Result</h3>
-            <p>{report.analysisResult}</p>
+            <p style={{ whiteSpace: "pre-wrap" }}>{report.analysisResult}</p>
+            <small>{report.analysisProvider} {report.analysisModel}</small>
           </div>
         )}
       </div>

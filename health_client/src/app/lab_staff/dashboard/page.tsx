@@ -82,7 +82,7 @@ export default function LabStaffDashboard() {
       setUploadForm({ patientName: "", patientEmail: "", reportType: "", file: null });
       fetchReports(); // Refresh the reports list
     } catch (err) {
-      setError("Failed to upload report. Please try again.");
+      setError(err instanceof Error ? err.message : "Failed to upload report. Please try again.");
       console.error("Upload error:", err);
     } finally {
       setUploadLoading(false);
@@ -254,7 +254,7 @@ export default function LabStaffDashboard() {
                     <td className="font-semibold text-black" style={{ padding: "12px 8px" }}>
                       {index + 1}
                     </td>
-                    <td style={tdName} style={{ padding: "12px 8px" }}>{report.patientName}</td>
+                    <td style={{ ...tdName, padding: "12px 8px" }}>{report.patientName}</td>
                     <td style={{ ...tdEmail, padding: "12px 8px" }}>{report.patientEmail}</td>
                     <td>
                       <span style={{ ...reportTypeBadge, padding: "6px 12px", fontSize: "13px", borderRadius: "8px", textAlign: "center" }}>
@@ -266,7 +266,7 @@ export default function LabStaffDashboard() {
                     <td style={{ padding: "12px 8px" }}>
                       <div className="flex justify-center gap-3">
                         <button
-                          onClick={() => router.push(`/lab_staff/reports/${report.fileId}`)}
+                          onClick={() => router.push(`/lab_staff/reports/${report.id}`)}
                           style={viewBtn}
                           title="View Report"
                         >
