@@ -37,3 +37,6 @@ next-env.d.ts
 .vscode
 package-lock.json
 .claude
+# Local Google Application Default Credentials
+gcp-adc.json
+application_default_credentials.json
