@@ -20,16 +20,45 @@ import com.example.lab_rep.model.LabReport;
 import com.example.lab_rep.repository.AuthUserRepository;
 import com.example.lab_rep.service.LabReportService;
 
-import lombok.RequiredArgsConstructor;
+import com.example.lab_rep.Security.ReportAccess;
 
 @RestController
 @RequestMapping("/api/reports")
 // @CrossOrigin(origins = "*")
-@RequiredArgsConstructor
 public class LabReportController {
 
     private final LabReportService reportService;
     private final AuthUserRepository authUserRepository;
+
+    private final ReportAccess access;
+
+    public LabReportController(LabReportService reportService, AuthUserRepository authUserRepository, ReportAccess access) {
+        this.reportService = reportService;
+        this.authUserRepository = authUserRepository;
+        this.access = access;
+    }
+
+    @GetMapping("/{id}/file")
+    public ResponseEntity<byte[]> download(@PathVariable String id) throws java.io.IOException {
+        LabReport report = reportService.requireReport(id);
+        access.patientOrStaff(report.getPatientEmail());
+        return ResponseEntity.ok().contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+            .header("Cache-Control", "no-store")
+            .header("Content-Disposition", org.springframework.http.ContentDisposition.inline().filename(report.getFileName(), java.nio.charset.StandardCharsets.UTF_8).build().toString())
+            .body(reportService.download(report));
+    }
+
+    @PostMapping("/{id}/retry")
+    public ResponseEntity<LabReport> retry(@PathVariable String id) throws java.io.IOException {
+        access.staff();
+        return ResponseEntity.ok(reportService.retry(id));
+    }
+
+    @PostMapping("/{id}/migrate")
+    public ResponseEntity<LabReport> migrate(@PathVariable String id) throws java.io.IOException {
+        access.staff();
+        return ResponseEntity.ok(reportService.migrate(id));
+    }
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadReport(
@@ -38,6 +67,7 @@ public class LabReportController {
             @RequestParam("reportType") String reportType,
             @RequestParam("file") MultipartFile file) {
 
+        access.staff();
         try {
             Optional<com.example.lab_rep.model.AuthUser> user = authUserRepository.findByEmail(patientEmail);
             if (user.isEmpty()) {
@@ -53,11 +83,6 @@ public class LabReportController {
                 return ResponseEntity.badRequest().body(Map.of("error", "File is empty"));
             }
 
-             /*String contentType = file.getContentType();
-            if (contentType == null || !contentType.equals("application/pdf")) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Only PDF files are allowed"));
-            } */
-
             LabReport report = reportService.uploadReport(patientName, patientEmail, reportType, file);
 
             Map<String, Object> response = new HashMap<>();
@@ -70,14 +95,17 @@ public class LabReportController {
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", e.getMessage()));
+                    .body(Map.of("error", "Report storage is unavailable. Please try again."));
         }
     }
 
     @GetMapping ("/view")
     public ResponseEntity<List<LabReport>> getAllReports() {
+        access.staff();
         return ResponseEntity.ok(reportService.getAllReports());
     }
 
@@ -85,6 +113,7 @@ public class LabReportController {
     public ResponseEntity<?> getReportByFileId(@PathVariable String fileId) {
         Optional<LabReport> report = reportService.getReportByFileId(fileId);
         if (report.isPresent()) {
+            access.patientOrStaff(report.get().getPatientEmail());
             return ResponseEntity.ok(report.get());
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -94,17 +123,14 @@ public class LabReportController {
 
     @GetMapping("/patient/{email}")
     public ResponseEntity<List<LabReport>> getReportsByPatient(@PathVariable String email) {
+        access.patientOrStaff(email);
         return ResponseEntity.ok(reportService.getReportsByPatient(email));
     }
 
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deleteReport(@PathVariable String id) {
-        try {
-            reportService.deleteReport(id);
-            return ResponseEntity.ok(Map.of("message", "Report deleted successfully"));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Report not found"));
-        }
+        access.staff();
+        reportService.deleteReport(id);
+        return ResponseEntity.ok(Map.of("message", "Report deleted successfully"));
     }
 }
