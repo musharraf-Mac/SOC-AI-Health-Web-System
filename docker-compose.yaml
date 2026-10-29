@@ -50,10 +50,14 @@ services:
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen3.5:4b}
       - OLLAMA_TIMEOUT_SECONDS=${OLLAMA_TIMEOUT_SECONDS:-180}
-      - AI_PROVIDER_ORDER=ollama
-#       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-#       - GROQ_API_KEY=${GROQ_API_KEY:-}
-#       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - AI_PROVIDER_ORDER=${AI_PROVIDER_ORDER:-ollama,groq1,openrouter,groq2}
+      - OLLAMA_ENABLED=${OLLAMA_ENABLED:-true}
+      - GROQ1_API_KEY=${GROQ1_API_KEY:-${GROQ_API_KEY:-}}
+      - GROQ2_API_KEY=${GROQ2_API_KEY:-${GROQ_API_KEY:-}}
+      - GROQ1_MODEL=${GROQ1_MODEL:-openai/gpt-oss-120b}
+      - GROQ2_MODEL=${GROQ2_MODEL:-qwen/qwen3.8-27b}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-google/gemma-4-31b-it:free}
       - PORT=8083
     dns:
       - 8.8.8.8
