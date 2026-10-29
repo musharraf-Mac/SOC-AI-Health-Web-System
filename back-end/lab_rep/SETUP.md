@@ -1,3 +1,46 @@
+# ft/lab-ollama: local inference diagnostics
+
+This branch calls only local Ollama. Gemini, Groq and OpenRouter configuration is commented out; their API keys and old AI_PROVIDER_ORDER values cannot enable cloud inference in this implementation. OLLAMA_ENABLED is ignored: Ollama is always attempted. Cloud Tasks is disabled in application.yaml so a local upload is processed by this backend. Google Cloud Storage still stores the report PDF and explanation; GCS credentials and MongoDB configuration are still required for an end-to-end upload.
+
+## Local configuration
+
+```
+AI_PROVIDER_ORDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=qwen3.5:4b
+OLLAMA_TIMEOUT_SECONDS=180
+```
+
+Start Ollama and check `ollama list`. The exact installed model name must match OLLAMA_MODEL. Restart the Java backend after configuration changes. For Docker Desktop, override OLLAMA_BASE_URL with http://host.docker.internal:11434; localhost inside a container does not refer to Windows. Docker Desktop must be running and Ollama must accept connections from the container network. Do not deploy this debugging branch to Cloud Run expecting to reach your laptop's localhost.
+
+## Diagnose failures
+
+Logs show the endpoint, model, timeout and elapsed time, never the report text, response bodies or raw exception details. A failed analysis retains the original PDF and saves a diagnostic in analysisError for the staff detail page. No explanation object is written on inference failure.
+
+- OLLAMA_CONNECTION: address unreachable, server not running, DNS/network/container access problem.
+- OLLAMA_NOT_FOUND: HTTP 404; check the base address and `ollama pull qwen3.5:4b`.
+- OLLAMA_TIMEOUT: generation did not finish within the limit; inspect `ollama ps`, GPU/CPU memory and Ollama server logs. Cold loading or a long report may need more time.
+- OLLAMA_REQUEST: HTTP 400; check model support and the Ollama version.
+- OLLAMA_HTTP: server HTTP error; check available memory and server logs.
+- OLLAMA_EMPTY / OLLAMA_INCOMPLETE / OLLAMA_RESPONSE: no usable, completed answer was received.
+- OLLAMA_CONFIG: invalid address or timeout.
+
+Use the staff report detail Retry explanation button after fixing the issue. Already completed reports are not reanalyzed by retry; upload a synthetic sample to test a fresh request. If a browser/Next.js proxy or API gateway times out first on a long request, check backend logs before uploading again; the backend may still be processing.
+
+## Verify the Java client
+
+Run from back-end/lab_rep (PowerShell):
+
+```
+.\mvnw.cmd -B '-Dtest=AiAnalysisServiceTest,LabReportServiceTest,ReportAccessTest' test
+```
+
+The real-model test is opt-in: append `'-Dollama.live=true'` while local Ollama is running. It sends only a synthetic sample, bypasses MongoDB/GCS, and exercises the actual application AI client. It does not verify a full authenticated PDF upload.
+
+The previous multi-provider/deployment guide is retained below for reference; it does not describe the active inference behavior of this branch.
+
+---
+
 # Lab reports: Cloud Storage and AI fallback
 
 Changes are on ft/lab. MongoDB keeps report metadata; new PDF and explanation bodies go to a private Google Cloud Storage bucket:
