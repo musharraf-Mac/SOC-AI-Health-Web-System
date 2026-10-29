@@ -110,7 +110,7 @@ public class LabReportService {
             report.setStatus("COMPLETED");
         } catch (Exception failure) {
             report.setStatus("FAILED");
-            report.setAnalysisError(failure instanceof AiAnalysisService.OllamaException
+            report.setAnalysisError(failure instanceof AiAnalysisService.AnalysisException
                 ? failure.getMessage() : "Explanation could not be generated or saved. Check storage configuration and retry.");
         }
         repository.save(report);

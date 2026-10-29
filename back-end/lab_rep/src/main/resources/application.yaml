@@ -25,22 +25,24 @@ reports:
   storage:
     bucket: ${GCS_BUCKET:}
 ai:
-  # Cloud providers are disabled in code on ft/lab-ollama, even with an old .env.
-  provider-order: ollama
+  provider-order: ${AI_PROVIDER_ORDER:ollama,groq1,openrouter,groq2}
   ollama:
-    # Always attempted on this branch; OLLAMA_ENABLED is intentionally ignored.
+    enabled: ${OLLAMA_ENABLED:true}
     base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
     model: ${OLLAMA_MODEL:qwen3.5:4b}
     timeout-seconds: ${OLLAMA_TIMEOUT_SECONDS:180}
-#   gemini:
-#     api-key: ${GEMINI_API_KEY:}
-#     model: ${GEMINI_MODEL:gemini-2.5-flash}
-#   groq:
-#     api-key: ${GROQ_API_KEY:}
-#     model: ${GROQ_MODEL:openai/gpt-oss-120b}
-#   openrouter:
-#     api-key: ${OPENROUTER_API_KEY:}
-#     model: ${OPENROUTER_MODEL:google/gemma-4-31b-it:free}
+  groq1:
+    api-key: ${GROQ1_API_KEY:${GROQ_API_KEY:}}
+    model: ${GROQ1_MODEL:openai/gpt-oss-120b}
+    timeout-seconds: ${GROQ1_TIMEOUT_SECONDS:45}
+  openrouter:
+    api-key: ${OPENROUTER_API_KEY:}
+    model: ${OPENROUTER_MODEL:google/gemma-4-31b-it:free}
+    timeout-seconds: ${OPENROUTER_TIMEOUT_SECONDS:45}
+  groq2:
+    api-key: ${GROQ2_API_KEY:${GROQ_API_KEY:}}
+    model: ${GROQ2_MODEL:qwen/qwen3.8-27b}
+    timeout-seconds: ${GROQ2_TIMEOUT_SECONDS:45}
 
 ocr:
   tessdata:
