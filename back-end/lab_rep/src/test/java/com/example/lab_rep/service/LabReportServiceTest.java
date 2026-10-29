@@ -90,13 +90,15 @@ class LabReportServiceTest {
         var ocr = mock(OcrService.class);
         when(ocr.extractTextFromPDF(any())).thenReturn("Report");
         var ai = mock(AiAnalysisService.class);
-        when(ai.analyze(any())).thenThrow(new IllegalStateException("No providers"));
+        when(ai.analyze(any())).thenThrow(new AiAnalysisService.OllamaException("OLLAMA_CONNECTION: backend cannot reach localhost:11434."));
         var storage = mock(ReportStorage.class);
         var result = new LabReportService(repo, ocr, ai, storage, mock(GridFsTemplate.class), mock(ReportTaskQueue.class), mock(org.springframework.data.mongodb.core.MongoTemplate.class)).uploadReport(
                 "Patient", "p@example.com", "Blood", new MockMultipartFile("file", "blood.pdf", "application/pdf", new byte[]{1}));
         assertEquals("FAILED", result.getStatus());
         assertNotNull(result.getReportObjectPath());
         assertNull(result.getExplanationObjectPath());
+        assertTrue(result.getAnalysisError().startsWith("OLLAMA_CONNECTION:"));
+        assertNull(result.getAnalysisResult());
         verify(storage, never()).delete(any());
     }
 }

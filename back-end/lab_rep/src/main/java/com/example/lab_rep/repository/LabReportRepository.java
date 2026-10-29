@@ -13,5 +13,5 @@ public interface LabReportRepository extends MongoRepository<LabReport, String> 
     List<LabReport> findByPatientEmail(String patientEmail);
     List<LabReport> findByPatientName(String patientName);
     List<LabReport> findByStatus(String status);
-    Optional<LabReport> findByFileId(String fileId);    
+    Optional<LabReport> findByFileId(String fileId);
 }
