@@ -47,11 +47,11 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: /var/run/google/adc.json
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3.5:4b}
-      OLLAMA_ENABLED: ${OLLAMA_ENABLED:-true}
-      AI_PROVIDER_ORDER: ${AI_PROVIDER_ORDER:-ollama,gemini,groq,openrouter}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-180}
+      AI_PROVIDER_ORDER: ollama
+#       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+#       GROQ_API_KEY: ${GROQ_API_KEY:-}
+#       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       PORT: 8083
     dns:
       - 8.8.8.8
