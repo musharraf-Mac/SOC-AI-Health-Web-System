@@ -1,43 +1,49 @@
-# ft/lab-ollama: local inference diagnostics
+# Current backend: verified explanations and ordered model fallback
 
-This branch calls only local Ollama. Gemini, Groq and OpenRouter configuration is commented out; their API keys and old AI_PROVIDER_ORDER values cannot enable cloud inference in this implementation. OLLAMA_ENABLED is ignored: Ollama is always attempted. Cloud Tasks is disabled in application.yaml so a local upload is processed by this backend. Google Cloud Storage still stores the report PDF and explanation; GCS credentials and MongoDB configuration are still required for an end-to-end upload.
+Active order: **ollama -> groq1 -> openrouter -> groq2**. Gemini is not implemented or called. The older deployment guide below is historical reference; its previous model lists do not apply to this configuration.
 
-## Local configuration
+| Slot | Default model | Credentials |
+|---|---|---|
+| ollama | qwen3.5:4b | None for local Ollama |
+| groq1 | openai/gpt-oss-120b | GROQ1_API_KEY, falling back to GROQ_API_KEY |
+| openrouter | google/gemma-4-31b-it:free | OPENROUTER_API_KEY |
+| groq2 | qwen/qwen3.8-27b | GROQ2_API_KEY, falling back to GROQ_API_KEY |
+
+Groq1 and Groq2 are two model attempts on Groq, not two independent quota pools. They can share one Groq API key; account-level exhaustion can affect both. Missing cloud keys skip that slot. HTTP errors, quota errors, connection failures, timeouts, incomplete generation and unusable extractions move to the next slot. If every slot fails, the PDF remains saved, status is FAILED, and analysisError contains safe diagnostics. No explanation is saved as successful on total failure. API keys and raw provider responses are never logged.
+
+## Configuration
 
 ```
-AI_PROVIDER_ORDER=ollama
+AI_PROVIDER_ORDER=ollama,groq1,openrouter,groq2
+OLLAMA_ENABLED=true
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=qwen3.5:4b
 OLLAMA_TIMEOUT_SECONDS=180
+GROQ_API_KEY=your-groq-key
+OPENROUTER_API_KEY=your-openrouter-key
 ```
 
-Start Ollama and check `ollama list`. The exact installed model name must match OLLAMA_MODEL. Restart the Java backend after configuration changes. For Docker Desktop, override OLLAMA_BASE_URL with http://host.docker.internal:11434; localhost inside a container does not refer to Windows. Docker Desktop must be running and Ollama must accept connections from the container network. Do not deploy this debugging branch to Cloud Run expecting to reach your laptop's localhost.
+Optional GROQ1_MODEL, GROQ2_MODEL, OPENROUTER_MODEL override the defaults above. Optional GROQ1_API_KEY and GROQ2_API_KEY override the shared key. Cloud timeouts default to 45 seconds, configurable with GROQ1_TIMEOUT_SECONDS, GROQ2_TIMEOUT_SECONDS and OPENROUTER_TIMEOUT_SECONDS. Models require provider access and quota. Model availability is not guaranteed by local tests.
 
-## Diagnose failures
+For native Java use localhost. In Docker Desktop set OLLAMA_BASE_URL=http://host.docker.internal:11434. An explicit localhost value in your .env overrides Compose's host.docker.internal default. On Cloud Run, localhost cannot reach your laptop; disable Ollama or provide a securely reachable endpoint. Current queue configuration remains disabled for local processing; enabling production Cloud Tasks is a separate deployment choice. The maximum default model wait is roughly 315 seconds across all four attempts, excluding storage; configure gateway/request timeouts accordingly or enable durable processing before production use.
 
-Logs show the endpoint, model, timeout and elapsed time, never the report text, response bodies or raw exception details. A failed analysis retains the original PDF and saves a diagnostic in analysisError for the staff detail page. No explanation object is written on inference failure.
+## How explanation accuracy changed
 
-- OLLAMA_CONNECTION: address unreachable, server not running, DNS/network/container access problem.
-- OLLAMA_NOT_FOUND: HTTP 404; check the base address and `ollama pull qwen3.5:4b`.
-- OLLAMA_TIMEOUT: generation did not finish within the limit; inspect `ollama ps`, GPU/CPU memory and Ollama server logs. Cold loading or a long report may need more time.
-- OLLAMA_REQUEST: HTTP 400; check model support and the Ollama version.
-- OLLAMA_HTTP: server HTTP error; check available memory and server logs.
-- OLLAMA_EMPTY / OLLAMA_INCOMPLETE / OLLAMA_RESPONSE: no usable, completed answer was received.
-- OLLAMA_CONFIG: invalid address or timeout.
+The model extracts structured measurements rather than writing clinical conclusions. Each entry must include its name, value, unit, printed numeric reference interval, and an exact contiguous quotation from the extracted PDF. Java checks the evidence and compares numbers with BigDecimal; the patient summary is rendered by backend code. Thus MCV 80 against 81-101 is below range, and MCHC 37.5 against 31.5-34.5 is above range. Models cannot substitute generic medical ranges or insert claims that normal results rule out disease. Internal document-security instructions are not patient-facing text and do not imply that the report is medically unreliable.
 
-Use the staff report detail Retry explanation button after fixing the issue. Already completed reports are not reanalyzed by retry; upload a synthetic sample to test a fresh request. If a browser/Next.js proxy or API gateway times out first on a long request, check backend logs before uploading again; the backend may still be processing.
+Ambiguous, qualitative, age/sex-dependent or unverifiable entries are omitted with a limitation notice. At least one verifiable numeric interval is required. Extraction can still miss or misassociate results: this is not a clinical validation or a complete report interpretation. Scanned PDFs still require OCR. Review original PDF evidence before clinical use.
 
-## Verify the Java client
+New uploads get the new explanation. Existing COMPLETED explanations are not rewritten automatically and the retry endpoint returns those unchanged. Test with a new synthetic PDF; do not delete real patient reports just to regenerate an explanation.
 
-Run from back-end/lab_rep (PowerShell):
+## Tests
+
+From back-end/lab_rep in PowerShell:
 
 ```
-.\mvnw.cmd -B '-Dtest=AiAnalysisServiceTest,LabReportServiceTest,ReportAccessTest' test
+.\mvnw.cmd -B '-Dtest=AiAnalysisServiceTest,LabExplanationFormatterTest,LabReportServiceTest,ReportAccessTest' test
 ```
 
-The real-model test is opt-in: append `'-Dollama.live=true'` while local Ollama is running. It sends only a synthetic sample, bypasses MongoDB/GCS, and exercises the actual application AI client. It does not verify a full authenticated PDF upload.
-
-The previous multi-provider/deployment guide is retained below for reference; it does not describe the active inference behavior of this branch.
+Append `'-Dollama.live=true'` to enable a live synthetic two-measurement extraction through the actual local Java/Ollama client. It bypasses MongoDB/GCS and does not verify authenticated uploads or live cloud calls. Unit tests simulate cloud transport/errors; cloud providers are not called with patient data during verification.
 
 ---
 
