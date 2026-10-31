@@ -131,29 +131,21 @@ export default function LabStaffDashboard() {
     return matchesStatus && [report.patientName, report.patientEmail, report.fileName, report.id, report.reportType, label(report.reportType)]
       .some(value => value?.toLowerCase().includes(query));
   }).sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
-  const counts = [
-    { title: "All reports", value: reports.length, detail: "In your lab workspace" },
-    { title: "Ready to view", value: reports.filter(r => r.status === "COMPLETED").length, detail: "Explanation completed" },
-    { title: "In progress", value: reports.filter(r => isProcessing(r.status)).length, detail: "Explanation being prepared" },
-    { title: "Needs attention", value: reports.filter(r => r.status === "FAILED").length, detail: "PDF remains available" },
-  ];
 
   return <div className={styles.page}>
-    <header className={styles.topbar}>
-      <div className={styles.brand}><span className={styles.brandMark} aria-hidden="true">M</span><span>Meridian Clinic <small>Lab workspace</small></span></div>
-      <nav aria-label="Account" className={styles.account}>
-        <button className={styles.textButton} onClick={() => router.push("/profile_page")}>My profile</button>
-        <button className={styles.secondary} onClick={() => { void logout().catch(() => {}); }}>Log out</button>
-      </nav>
-    </header>
     <main className={styles.main}>
-      <div className={styles.heading}>
-        <div><p className={styles.eyebrow}>LAB REPORT MANAGEMENT</p><h1>Lab reports</h1><p className={styles.subtitle}>Your patients’ reports and explanations, in one place.</p></div>
-        <button className={styles.primary} onClick={() => { setUploadError(""); setShowUpload(true); }}><span aria-hidden="true">＋</span> Upload report</button>
-      </div>
-      <section className={styles.stats} aria-label="Report overview">
-        {counts.map(item => <div className={styles.stat} key={item.title}><span>{item.title}</span><strong>{loading && !reports.length ? "—" : item.value}</strong><small>{item.detail}</small></div>)}
-      </section>
+      <header className={styles.heading}>
+        <div>
+          <p className={styles.eyebrow}>Lab Staff Dashboard</p>
+          <h1>Lab reports</h1>
+          <p className={styles.subtitle}>View patient reports and their explanations.</p>
+        </div>
+        <div className={styles.account}>
+          <button className={styles.primary} onClick={() => { setUploadError(""); setShowUpload(true); }}><span aria-hidden="true">📤</span> Upload report</button>
+          <button className={styles.profileButton} title="Profile" aria-label="Profile" onClick={() => router.push("/profile_page")}><span aria-hidden="true">👤</span></button>
+          <button className={styles.logoutButton} onClick={() => { void logout().catch(() => {}); }}><span aria-hidden="true">🚪</span> Logout</button>
+        </div>
+      </header>
       {notice && <div role="status" className={styles.notice}>{notice}<button aria-label="Dismiss notification" onClick={() => setNotice("")}>×</button></div>}
       {error && <div role="alert" className={styles.error}>{error}</div>}
       <section className={styles.panel} aria-label="Reports">
