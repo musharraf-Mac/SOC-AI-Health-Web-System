@@ -36,10 +36,14 @@ export async function apiFetch<T = Record<string, string>>(
 
 export async function reportFileUrl(id: string): Promise<string> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8087";
-  const response = await fetch(`${baseUrl}/api/reports/${encodeURIComponent(id)}/file`, {
+  const response = await fetch(`${baseUrl}/api/reports/${encodeURIComponent(id)}/pdf`, {
     headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
     credentials: "include",
+    cache: "no-store",
   });
-  if (!response.ok) throw new Error(`Unable to open report (${response.status})`);
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    throw new Error(detail.error || `Unable to open report (${response.status})`);
+  }
   return URL.createObjectURL(await response.blob());
 }

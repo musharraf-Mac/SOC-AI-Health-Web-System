@@ -1,20 +1,46 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, reportFileUrl } from "@/lib/api";
-import ExplanationDialog from "./explanation-dialog";
+import ExplanationDialog, { type ExplanationReport } from "./explanation-dialog";
+import styles from "./dashboard.module.css";
 
-interface LabReport {
-  id: string;
-  patientName: string;
+interface LabReport extends ExplanationReport {
   patientEmail: string;
-  reportType: string;
-  fileId: string;
-  fileName?: string;
-  status: string;
   uploadedAt: string;
-  analysisResult?: string;
+}
+const reportTypes = ["BLOOD_TEST", "URINE_TEST", "X_RAY", "MRI", "CT_SCAN", "ULTRASOUND", "PATHOLOGY", "OTHER"];
+const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+const isProcessing = (status: string) => ["PENDING", "PROCESSING", "PROCESSED"].includes(status);
+const statusLabel = (status: string) => status === "COMPLETED" ? "Ready" : status === "FAILED" ? "Needs attention" : label(status);
+const dateLabel = (value: string) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Date unavailable" : date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+};
+
+function Modal({ title, onClose, busy, children }: { title: string; onClose: () => void; busy?: boolean; children: ReactNode }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = ref.current;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previous = document.body.style.overflow;
+    dialog?.showModal();
+    document.body.style.overflow = "hidden";
+    return () => {
+      dialog?.close();
+      document.body.style.overflow = previous;
+      if (opener?.isConnected) opener.focus();
+    };
+  }, []);
+  const close = () => { if (!busy) { ref.current?.close(); onClose(); } };
+  return <dialog ref={ref} className={styles.modal} aria-labelledby="action-dialog-title" onCancel={event => { event.preventDefault(); close(); }}>
+    <div className={styles.modalHeader}>
+      <h2 id="action-dialog-title">{title}</h2>
+      <button type="button" className={styles.close} aria-label={`Close ${title.toLowerCase()}`} disabled={busy} onClick={close}>×</button>
+    </div>
+    {children}
+  </dialog>;
 }
 
 export default function LabStaffDashboard() {
@@ -22,104 +48,34 @@ export default function LabStaffDashboard() {
   const [reports, setReports] = useState<LabReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedReport, setSelectedReport] = useState<LabReport | null>(null);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("ALL");
   const [explanationReport, setExplanationReport] = useState<LabReport | null>(null);
   const [openingPdf, setOpeningPdf] = useState<string | null>(null);
-  
-  // Upload state
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadLoading, setUploadLoading] = useState(false);
-  const [uploadForm, setUploadForm] = useState({
-    patientName: "",
-    patientEmail: "",
-    reportType: "",
-    file: null as File | null,
-  });
+  const [deleteReport, setDeleteReport] = useState<LabReport | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [notice, setNotice] = useState("");
 
   const loadReports = useCallback((signal?: AbortSignal) => {
-    return apiFetch<LabReport[]>("/api/reports/view", { signal, cache: "no-store" })
-      .then((data) => { if (!signal?.aborted) setReports(data); })
-      .catch(() => {
-        if (!signal?.aborted) setError("Failed to load reports. Please try again.");
-      })
+    return apiFetch<LabReport[]>("/api/reports/view?includeExplanation=false", { signal, cache: "no-store" })
+      .then(data => { if (!signal?.aborted) { setReports(data); setError(""); } })
+      .catch(() => { if (!signal?.aborted) setError("Reports could not be loaded. Please refresh to try again."); })
       .finally(() => { if (!signal?.aborted) setLoading(false); });
   }, []);
-
-  const fetchReports = () => {
-    setLoading(true);
-    setError("");
-    return loadReports();
-  };
-
   useEffect(() => {
     const controller = new AbortController();
     void loadReports(controller.signal);
     return () => controller.abort();
   }, [loadReports]);
-  
+  const refresh = () => { setLoading(true); void loadReports(); };
 
-  // Handle Upload
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!uploadForm.file) {
-      setError("Please select a file");
-      return;
-    }
-
-    setUploadLoading(true);
-    setError("");
-
-    const formData = new FormData();
-    formData.append("patientName", uploadForm.patientName);
-    formData.append("patientEmail", uploadForm.patientEmail);
-    formData.append("reportType", uploadForm.reportType);
-    formData.append("file", uploadForm.file);
-
-    try {
-      const response = await apiFetch("/api/reports/upload", {
-        method: "POST",
-        body: formData
-        
-      });
-      console.log("Upload response:", response);
-      //close modal and reset form
-      setShowUploadModal(false);
-      setUploadForm({ patientName: "", patientEmail: "", reportType: "", file: null });
-      fetchReports(); // Refresh the reports list
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to upload report. Please try again.");
-      console.error("Upload error:", err);
-    } finally {
-      setUploadLoading(false);
-    }
-  };
-
-  const handleDelete = async (reportId: string) => {
-    setDeleteLoading(reportId);
-    try {
-      await apiFetch(`/api/reports/delete/${reportId}`, {
-        method: "DELETE",
-      });
-      setReports((current) => current.filter((r) => r.id !== reportId));
-      setShowDeleteModal(false);
-      setSelectedReport(null);
-    } catch (err) {
-      setError("Failed to delete report. Please try again.");
-      console.error("Error deleting report:", err);
-    } finally {
-      setDeleteLoading(null);
-    }
-  };
-
-  const handleOpenPdf = async (report: LabReport) => {
-    // Open during the click so the browser does not block the tab after the fetch.
+  const openPdf = async (report: LabReport) => {
     const tab = window.open("", "_blank");
-    if (!tab) {
-      setError("Please allow popups for this site to open the report PDF.");
-      return;
-    }
+    if (!tab) { setError("Please allow popups for this site to open the report PDF."); return; }
     tab.opener = null;
     tab.document.title = "Loading report PDF";
     tab.document.body.textContent = "Loading report PDF...";
@@ -127,716 +83,123 @@ export default function LabStaffDashboard() {
     setError("");
     try {
       const url = await reportFileUrl(report.id);
-      if (tab.closed) {
-        URL.revokeObjectURL(url);
-        return;
-      }
+      if (tab.closed) { URL.revokeObjectURL(url); return; }
       tab.location.replace(url);
       window.setTimeout(() => URL.revokeObjectURL(url), 120000);
-    } catch {
+    } catch (failure) {
       tab.close();
-      setError("Unable to open this report PDF. Please try again.");
-    } finally {
-      setOpeningPdf(null);
-    }
+      setError(failure instanceof Error ? failure.message : "Unable to open this PDF. Please try again.");
+    } finally { setOpeningPdf(null); }
   };
-
-  const handleLogout = async () => {
+  const removeReport = async () => {
+    if (!deleteReport || deleting) return;
+    setDeleting(true);
+    setDeleteError("");
     try {
-      await apiFetch("/api/auth/logout", {
-        method: "POST",
-      });
-    } catch (err) {
-      console.error("Logout error:", err);
-    } finally {
-      localStorage.removeItem("role");
-      localStorage.removeItem("token");
-      router.push("/login");
+      await apiFetch(`/api/reports/delete/${encodeURIComponent(deleteReport.id)}`, { method: "DELETE" });
+      setReports(current => current.filter(report => report.id !== deleteReport.id));
+      setDeleteReport(null);
+      setNotice("Report deleted successfully.");
+    } catch { setDeleteError("Unable to delete this report. Please try again."); }
+    finally { setDeleting(false); }
+  };
+  const uploadReport = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const file = form.get("file");
+    if (!(file instanceof File) || !file.name.toLowerCase().endsWith(".pdf") || !file.size || file.size > 20 * 1024 * 1024) {
+      setUploadError("Select a PDF file between 1 byte and 20 MB."); return;
     }
+    setUploading(true);
+    setUploadError("");
+    try {
+      const result = await apiFetch<{ status: string }>("/api/reports/upload", { method: "POST", body: form });
+      setShowUpload(false);
+      setNotice(result.status === "FAILED" ? "Report saved. Its explanation needs attention." : "Report uploaded successfully.");
+      refresh();
+    } catch (failure) { setUploadError(failure instanceof Error ? failure.message : "Upload failed. Please try again."); }
+    finally { setUploading(false); }
+  };
+  const logout = async () => {
+    try { await apiFetch("/api/auth/logout", { method: "POST" }); }
+    finally { localStorage.removeItem("role"); localStorage.removeItem("token"); router.push("/login"); }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  const query = search.trim().toLowerCase();
+  const filtered = reports.filter(report => {
+    const matchesStatus = filter === "ALL" || (filter === "PROCESSING" ? isProcessing(report.status) : report.status === filter);
+    return matchesStatus && [report.patientName, report.patientEmail, report.fileName, report.id, report.reportType, label(report.reportType)]
+      .some(value => value?.toLowerCase().includes(query));
+  }).sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
+  const counts = [
+    { title: "All reports", value: reports.length, detail: "In your lab workspace" },
+    { title: "Ready to view", value: reports.filter(r => r.status === "COMPLETED").length, detail: "Explanation completed" },
+    { title: "In progress", value: reports.filter(r => isProcessing(r.status)).length, detail: "Explanation being prepared" },
+    { title: "Needs attention", value: reports.filter(r => r.status === "FAILED").length, detail: "PDF remains available" },
+  ];
 
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, { bg: string; color: string }> = {
-      PENDING: { bg: "#FFF3E0", color: "#E65100" },
-      PROCESSING: { bg: "#E3F2FD", color: "#0D47A1" },
-      PROCESSED: { bg: "#E3F2FD", color: "#0D47A1" },
-      COMPLETED: { bg: "#E8F5E9", color: "#1B5E20" },
-      FAILED: { bg: "#FDE8E8", color: "#C0392B" },
-    };
-    const style = styles[status] || { bg: "#F5F5F5", color: "#616161" };
-    return (
-      <span
-        style={{
-          padding: "4px 12px",
-          borderRadius: "12px",
-          background: style.bg,
-          color: style.color,
-          fontSize: "12px",
-          fontWeight: 600,
-        }}
-      >
-        {status}
-      </span>
-    );
-  };
-
-  return (
-    <div style={pageWrap}>
-      {/* Header */}
-      <header style={header}>
-        <div style={headerLeft}>
-          <h1 style={headerTitle}>Lab Reports Dashboard</h1>
-          <span style={reportCount}>{reports.length} reports</span>
-        </div>
-        <div style={headerRight}>
-          {/* UPLOAD BUTTON */}
-          <button
-            onClick={() => setShowUploadModal(true)}
-            style={uploadBtn}
-          >
-            <span>📤</span> Upload Report
-          </button>
-
-          {/* Profile Button */}
-          <button
-            onClick={() => router.push("../../profile_page")}
-            style={profileBtn}
-            title="Profile"
-          >
-            <span style={profileIcon}>👤</span>
-          </button>
-          
-          {/* Logout Button */}
-          <button onClick={handleLogout} style={logoutBtn}>
-            <span>🚪</span> Logout
-          </button>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div style={content}>
-        {/* Toolbar */}
-        <div style={toolbar}>
-          <button onClick={fetchReports} style={refreshBtn}>
-            🔄 Refresh
-          </button>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div style={errorBanner}>
-            <span>⚠️</span> {error}
-            <button onClick={() => setError("")} style={closeBtn}>
-              ×
-            </button>
-          </div>
-        )}
-
-        {/* Reports Table */}
-        {loading ? (
-          <div style={loadingContainer}>
-            <div style={spinner}></div>
-            <p>Loading reports...</p>
-          </div>
-        ) : reports.length === 0 ? (
-          <div style={emptyState}>
-            <span style={emptyIcon}>📄</span>
-            <h3>No reports found</h3>
-            <p>Uploaded lab reports will appear here.</p>
-          </div>
-        ) : (
-          <div style={tableContainer}>
-            <table style={table}>
-              <thead style={{ color: "#1B1B18" }}>
-                <tr>
-                  <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "left", width: "15%" }}>
-                    Report / SR#
-                  </th>
-                  <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "left", width: "18%" }}>
-                    Patient
-                  </th>
-                  <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "left", width: "15%" }}>
-                    Email
-                  </th>
-                  <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "left", width: "18%" }}>
-                    Report Type
-                  </th>
-                  <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "center", width: "10%" }}>
-                    Status
-                  </th>
-                  <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "center", width: "14%" }}>
-                    Uploaded
-                  </th>
-                  <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "center", width: "15%" }}>
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody style={{ color: "#0B3D3A" }}>
-                {reports.map((report, index) => (
-                  <tr
-                    key={report.id}
-                    style={{ color: "inherit", fontSize: "14px" }}
-                  >
-                    <td className="font-semibold text-black" style={{ padding: "12px 8px" }}>
-                      {index + 1}
-                      <div style={{ marginTop: "4px", fontSize: "12px", fontWeight: 400, overflowWrap: "anywhere" }}>
-                        {report.fileName || report.id}
-                      </div>
-                    </td>
-                    <td style={{ ...tdName, padding: "12px 8px" }}>{report.patientName}</td>
-                    <td style={{ ...tdEmail, padding: "12px 8px" }}>{report.patientEmail}</td>
-                    <td>
-                      <span style={{ ...reportTypeBadge, padding: "6px 12px", fontSize: "13px", borderRadius: "8px", textAlign: "center" }}>
-                        {report.reportType}
-                      </span>
-                    </td>
-                    <td style={{ padding: "12px 8px" }}>{getStatusBadge(report.status)}</td>
-                    <td style={{ padding: "12px 8px", whiteSpace: "nowrap", textAlign: "center" }}>{formatDate(report.uploadedAt)}</td>
-                    <td style={{ padding: "12px 8px" }}>
-                      <div style={actionButtons}>
-                        <button
-                          onClick={() => handleOpenPdf(report)}
-                          style={viewBtn}
-                          title="Open original PDF in a new tab"
-                          disabled={openingPdf !== null}
-                        >
-                          {openingPdf === report.id ? "Opening..." : "View PDF ↗"}
-                        </button>
-                        <button
-                          onClick={() => setExplanationReport(report)}
-                          style={{ ...viewBtn, background: "#E8F5E9", color: "#1B5E20" }}
-                        >
-                          View explanation
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedReport(report);
-                            setShowDeleteModal(true);
-                          }}
-                          style={{ ...deleteBtn, padding: "6px 10px", fontSize: "14px" }}
-                          title="Delete Report"
-                          disabled={deleteLoading === report.id}
-                        >
-                          {deleteLoading === report.id ? "Deleting..." : "Delete"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+  return <div className={styles.page}>
+    <header className={styles.topbar}>
+      <div className={styles.brand}><span className={styles.brandMark} aria-hidden="true">M</span><span>Meridian Clinic <small>Lab workspace</small></span></div>
+      <nav aria-label="Account" className={styles.account}>
+        <button className={styles.textButton} onClick={() => router.push("/profile_page")}>My profile</button>
+        <button className={styles.secondary} onClick={() => { void logout().catch(() => {}); }}>Log out</button>
+      </nav>
+    </header>
+    <main className={styles.main}>
+      <div className={styles.heading}>
+        <div><p className={styles.eyebrow}>LAB REPORT MANAGEMENT</p><h1>Lab reports</h1><p className={styles.subtitle}>Your patients’ reports and explanations, in one place.</p></div>
+        <button className={styles.primary} onClick={() => { setUploadError(""); setShowUpload(true); }}><span aria-hidden="true">＋</span> Upload report</button>
       </div>
-
-      {explanationReport && (
-        <ExplanationDialog
-          key={explanationReport.id}
-          report={explanationReport}
-          onClose={() => setExplanationReport(null)}
-        />
-      )}
-
-      {/* UPLOAD MODAL */}
-      {showUploadModal && (
-        <div style={modalOverlay}>
-          <div style={modal}>
-            <h3 style={modalTitle}>📤 Upload Lab Report</h3>
-            <form onSubmit={handleUpload}>
-              <div style={formGroup}>
-                <label style={formLabel}>Patient Name *</label>
-                <input
-                  type="text"
-                  value={uploadForm.patientName}
-                  onChange={(e) => setUploadForm({ ...uploadForm, patientName: e.target.value })}
-                  style={formInput}
-                  placeholder="Enter patient full name"
-                  required
-                />
-              </div>
-
-              <div style={formGroup}>
-                <label style={formLabel}>Patient Email *</label>
-                <input
-                  type="email"
-                  value={uploadForm.patientEmail}
-                  onChange={(e) => setUploadForm({ ...uploadForm, patientEmail: e.target.value })}
-                  style={formInput}
-                  placeholder="patient@example.com"
-                  required
-                />
-              </div>
-
-              <div style={formGroup}>
-                <label style={formLabel}>Report Type *</label>
-                <select
-                  value={uploadForm.reportType}
-                  onChange={(e) => setUploadForm({ ...uploadForm, reportType: e.target.value })}
-                  style={formInput}
-                  required
-                >
-                  <option value="">Select report type</option>
-                  <option value="BLOOD_TEST">Blood Test</option>
-                  <option value="URINE_TEST">Urine Test</option>
-                  <option value="X_RAY">X-Ray</option>
-                  <option value="MRI">MRI</option>
-                  <option value="CT_SCAN">CT Scan</option>
-                  <option value="ULTRASOUND">Ultrasound</option>
-                  <option value="PATHOLOGY">Pathology</option>
-                  <option value="OTHER">Other</option>
-                </select>
-              </div>
-
-              <div style={formGroup}>
-                <label style={formLabel}>Upload PDF File *</label>
-                <input
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    setUploadForm({ ...uploadForm, file });
-                  }}
-                  style={fileInput}
-                  required
-                />
-                {uploadForm.file && (
-                  <span style={fileName}>{uploadForm.file.name}</span>
-                )}
-              </div>
-
-              {error && <p style={modalError}>{error}</p>}
-
-              <div style={modalActions}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowUploadModal(false);
-                    setUploadForm({ patientName: "", patientEmail: "", reportType: "", file: null });
-                    setError("");
-                  }}
-                  style={modalCancelBtn}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploadLoading}
-                  style={modalUploadBtn}
-                >
-                  {uploadLoading ? "Uploading..." : "📤 Upload Report"}
-                </button>
-              </div>
-            </form>
-          </div>
+      <section className={styles.stats} aria-label="Report overview">
+        {counts.map(item => <div className={styles.stat} key={item.title}><span>{item.title}</span><strong>{loading && !reports.length ? "—" : item.value}</strong><small>{item.detail}</small></div>)}
+      </section>
+      {notice && <div role="status" className={styles.notice}>{notice}<button aria-label="Dismiss notification" onClick={() => setNotice("")}>×</button></div>}
+      {error && <div role="alert" className={styles.error}>{error}</div>}
+      <section className={styles.panel} aria-label="Reports">
+        <div className={styles.toolbar}>
+          <label className={styles.search}><span className={styles.srOnly}>Search reports</span><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg><input type="search" placeholder="Search patient, email or report…" value={search} onChange={event => setSearch(event.target.value)} /></label>
+          <label className={styles.filter}><span className={styles.srOnly}>Filter by status</span><select value={filter} onChange={event => setFilter(event.target.value)}><option value="ALL">All statuses</option><option value="COMPLETED">Ready</option><option value="PROCESSING">In progress</option><option value="FAILED">Needs attention</option></select></label>
+          <button className={styles.secondary} disabled={loading} onClick={refresh}>{loading ? "Refreshing…" : "Refresh"}</button>
         </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && selectedReport && (
-        <div style={modalOverlay}>
-          <div style={modal}>
-            <h3>Confirm Delete</h3>
-            <p>
-              Are you sure you want to delete the report for{" "}
-              <strong>{selectedReport.patientName}</strong>?
-            </p>
-            <p style={modalSubtext}>This action cannot be undone.</p>
-            <div style={modalActions}>
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setSelectedReport(null);
-                }}
-                style={modalCancelBtn}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDelete(selectedReport.id)}
-                style={modalDeleteBtn}
-                disabled={deleteLoading !== null}
-              >
-                {deleteLoading ? "Deleting..." : "Delete Report"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+        <div className={styles.listInfo} aria-live="polite">{loading ? "Loading reports…" : `${filtered.length} of ${reports.length} reports`}<span>Newest first</span></div>
+        {loading && !reports.length ? <div role="status" className={styles.empty}>Loading your lab reports…</div> : !filtered.length ? <div className={styles.empty}><h2>{error ? "Reports unavailable" : reports.length ? "No matching reports" : "No reports yet"}</h2><p>{error ? "Use Refresh to try again." : reports.length ? "Try a different search or status filter." : "Upload a PDF report to get started."}</p>{reports.length > 0 && <button className={styles.secondary} onClick={() => { setSearch(""); setFilter("ALL"); }}>Clear filters</button>}</div> : <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead><tr><th>Report</th><th>Patient</th><th>Status</th><th>Uploaded</th><th className={styles.actionHeading}>Actions</th></tr></thead>
+            <tbody>{filtered.map(report => <tr key={report.id}>
+              <td data-label="Report"><div className={styles.reportCell}><span className={styles.fileIcon} aria-hidden="true">PDF</span><div><strong className={styles.fileName}>{report.fileName || `${label(report.reportType)} report`}</strong><small>{label(report.reportType)}</small></div></div></td>
+              <td data-label="Patient"><strong className={styles.patientName}>{report.patientName}</strong><small className={styles.email}>{report.patientEmail}</small></td>
+              <td data-label="Status"><span className={`${styles.status} ${report.status === "COMPLETED" ? styles.ready : report.status === "FAILED" ? styles.failed : styles.pending}`}><span aria-hidden="true" />{statusLabel(report.status)}</span></td>
+              <td data-label="Uploaded"><time dateTime={report.uploadedAt} className={styles.date}>{dateLabel(report.uploadedAt)}</time></td>
+              <td data-label="Actions"><div className={styles.actions}>
+                <button className={styles.pdfButton} disabled={openingPdf !== null} onClick={() => openPdf(report)} title="Open PDF in a new tab">{openingPdf === report.id ? "Opening…" : "View PDF ↗"}</button>
+                <button className={styles.explanationButton} onClick={() => setExplanationReport(report)}>View explanation</button>
+                <button className={styles.deleteButton} onClick={() => { setDeleteError(""); setDeleteReport(report); }}>Delete</button>
+              </div></td>
+            </tr>)}</tbody>
+          </table>
+        </div>}
+      </section>
+      <p className={styles.footer}>PDF reports open in a new tab. Explanations open here in your workspace.</p>
+    </main>
+    {explanationReport && <ExplanationDialog key={explanationReport.id} report={explanationReport} onClose={() => setExplanationReport(null)} />}
+    {showUpload && <Modal title="Upload lab report" onClose={() => setShowUpload(false)} busy={uploading}>
+      <form onSubmit={uploadReport} className={styles.form}>
+        <p className={styles.subtitle}>Add a report for a registered patient.</p>
+        <label>Patient name<input name="patientName" required placeholder="Full name" disabled={uploading} /></label>
+        <label>Patient email<input name="patientEmail" type="email" required placeholder="patient@example.com" disabled={uploading} /></label>
+        <label>Report type<select name="reportType" required defaultValue="" disabled={uploading}><option value="" disabled>Select report type</option>{reportTypes.map(type => <option key={type} value={type}>{label(type)}</option>)}</select></label>
+        <label className={styles.fileUpload}>Report PDF<input name="file" type="file" accept=".pdf,application/pdf" required disabled={uploading} /><small>Maximum 20 MB. The PDF must contain selectable text.</small></label>
+        {uploadError && <p role="alert" className={styles.error}>{uploadError}</p>}
+        {uploading && <p role="status" className={styles.subtitle}>Saving the report and preparing its explanation. This may take a few minutes.</p>}
+        <div className={styles.modalActions}><button type="button" className={styles.secondary} disabled={uploading} onClick={() => setShowUpload(false)}>Cancel</button><button className={styles.primary} disabled={uploading}>{uploading ? "Uploading…" : "Upload report"}</button></div>
+      </form>
+    </Modal>}
+    {deleteReport && <Modal title="Delete report?" onClose={() => setDeleteReport(null)} busy={deleting}>
+      <div className={styles.form}><p>This will permanently delete <strong>{deleteReport.fileName || label(deleteReport.reportType)}</strong> and its explanation for <strong>{deleteReport.patientName}</strong>.</p><p className={styles.subtitle}>This action cannot be undone.</p>
+        {deleteError && <p role="alert" className={styles.error}>{deleteError}</p>}
+        <div className={styles.modalActions}><button className={styles.secondary} disabled={deleting} onClick={() => setDeleteReport(null)}>Cancel</button><button className={styles.danger} disabled={deleting} onClick={removeReport}>{deleting ? "Deleting…" : "Delete report"}</button></div>
+      </div>
+    </Modal>}
+  </div>;
 }
-
-// ============ STYLES ============
-
-const pageWrap: React.CSSProperties = {
-  minHeight: "100vh",
-  background: "#F6F3EC",
-  fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-};
-
-const header: React.CSSProperties = {
-  background: "#FFFFFF",
-  padding: "16px 32px",
-  borderBottom: "1px solid #DCD6C8",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  position: "sticky",
-  top: 0,
-  zIndex: 100,
-};
-
-const headerLeft: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "16px",
-};
-
-const headerTitle: React.CSSProperties = {
-  fontFamily: "'Fraunces', Georgia, serif",
-  fontSize: "24px",
-  fontWeight: 600,
-  color: "#0B3D3A",
-  margin: 0,
-};
-
-const reportCount: React.CSSProperties = {
-  fontSize: "14px",
-  color: "#8A8577",
-  background: "#F6F3EC",
-  padding: "4px 12px",
-  borderRadius: "12px",
-};
-
-const headerRight: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "12px",
-};
-
-const uploadBtn: React.CSSProperties = {
-  padding: "10px 20px",
-  borderRadius: "8px",
-  background: "#0B3D3A",
-  color: "#FFFFFF",
-  border: "none",
-  cursor: "pointer",
-  fontSize: "14px",
-  fontWeight: 600,
-  display: "flex",
-  alignItems: "center",
-  gap: "8px",
-  transition: "background 0.2s",
-};
-
-const profileBtn: React.CSSProperties = {
-  width: "44px",
-  height: "44px",
-  borderRadius: "50%",
-  background: "#F6F3EC",
-  border: "2px solid #DCD6C8",
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: "20px",
-  transition: "all 0.2s",
-  padding: 0,
-};
-
-const profileIcon: React.CSSProperties = {
-  fontSize: "20px",
-  lineHeight: 1,
-};
-
-const logoutBtn: React.CSSProperties = {
-  padding: "10px 20px",
-  borderRadius: "8px",
-  background: "#FF8A5B",
-  color: "#FFFFFF",
-  border: "none",
-  cursor: "pointer",
-  fontSize: "14px",
-  fontWeight: 600,
-  display: "flex",
-  alignItems: "center",
-  gap: "8px",
-  transition: "background 0.2s",
-};
-
-const content: React.CSSProperties = {
-  padding: "32px",
-  maxWidth: "1400px",
-  margin: "0 auto",
-};
-
-const toolbar: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "flex-end",
-  marginBottom: "20px",
-};
-
-const refreshBtn: React.CSSProperties = {
-  padding: "8px 16px",
-  borderRadius: "6px",
-  background: "transparent",
-  border: "1px solid #DCD6C8",
-  cursor: "pointer",
-  fontSize: "14px",
-  color: "#4A463E",
-  transition: "background 0.2s",
-};
-
-const errorBanner: React.CSSProperties = {
-  background: "#FDE8E8",
-  color: "#C0392B",
-  padding: "12px 20px",
-  borderRadius: "8px",
-  marginBottom: "20px",
-  display: "flex",
-  alignItems: "center",
-  gap: "12px",
-  fontSize: "14px",
-};
-
-const closeBtn: React.CSSProperties = {
-  background: "none",
-  border: "none",
-  fontSize: "20px",
-  cursor: "pointer",
-  color: "#C0392B",
-  marginLeft: "auto",
-};
-
-const loadingContainer: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: "60px",
-  color: "#8A8577",
-};
-
-const spinner: React.CSSProperties = {
-  width: "40px",
-  height: "40px",
-  border: "4px solid #DCD6C8",
-  borderTop: "4px solid #FF8A5B",
-  borderRadius: "50%",
-  animation: "spin 1s linear infinite",
-};
-
-const emptyState: React.CSSProperties = {
-  textAlign: "center",
-  padding: "80px 20px",
-  color: "#8A8577",
-};
-
-const emptyIcon: React.CSSProperties = {
-  fontSize: "48px",
-  display: "block",
-  marginBottom: "16px",
-};
-
-const tableContainer: React.CSSProperties = {
-  background: "#FFFFFF",
-  borderRadius: "12px",
-  border: "1px solid #DCD6C8",
-  overflowX: "auto",
-  color:"black"
-};
-
-const table: React.CSSProperties = {
-  width: "100%",
-  borderCollapse: "collapse",
-  color:"black"
-};
-
-const tdName: React.CSSProperties = {
-  fontWeight: 500,
-  color: "#0B3D3A",
-};
-
-const tdEmail: React.CSSProperties = {
-  color: "#8A8577",
-  fontSize: "14px",
-};
-
-const reportTypeBadge: React.CSSProperties = {
-  padding: "4px 12px",
-  borderRadius: "12px",
-  background: "#E8F0FE",
-  color: "#1A56DB",
-  fontSize: "12px",
-  fontWeight: 600,
-};
-
-const actionButtons: React.CSSProperties = {
-  display: "flex",
-  flexWrap: "wrap",
-  justifyContent: "center",
-  minWidth: "150px",
-  gap: "8px",
-};
-
-const viewBtn: React.CSSProperties = {
-  padding: "6px 10px",
-  borderRadius: "6px",
-  border: "none",
-  background: "#E3F2FD",
-  color: "#0D47A1",
-  cursor: "pointer",
-  fontSize: "13px",
-  fontWeight: 600,
-  whiteSpace: "nowrap",
-  transition: "background 0.2s",
-};
-
-const deleteBtn: React.CSSProperties = {
-  padding: "6px 10px",
-  borderRadius: "6px",
-  border: "none",
-  background: "#FDE8E8",
-  cursor: "pointer",
-  fontSize: "16px",
-  transition: "background 0.2s",
-};
-
-// Modal Styles
-const modalOverlay: React.CSSProperties = {
-  position: "fixed",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  background: "rgba(0, 0, 0, 0.5)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  zIndex: 1000,
-};
-
-const modal: React.CSSProperties = {
-  background: "#FFFFFF",
-  color: "#1B1B18",
-  borderRadius: "12px",
-  padding: "32px",
-  maxWidth: "480px",
-  width: "100%",
-  boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
-  maxHeight: "90vh",
-  overflowY: "auto",
-};
-
-const modalTitle: React.CSSProperties = {
-  fontSize: "20px",
-  fontWeight: 600,
-  color: "#0B3D3A",
-  marginTop: 0,
-  marginBottom: "20px",
-};
-
-const formGroup: React.CSSProperties = {
-  marginBottom: "16px",
-};
-
-const formLabel: React.CSSProperties = {
-  display: "block",
-  fontSize: "14px",
-  fontWeight: 500,
-  color: "#1B1B18",
-  marginBottom: "4px",
-};
-
-const formInput: React.CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  fontSize: "14px",
-  border: "1px solid #DCD6C8",
-  borderRadius: "8px",
-  outline: "none",
-  background: "#FEFDFB",
-  color: "#1B1B18",
-  fontFamily: "inherit",
-};
-
-const fileInput: React.CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  fontSize: "14px",
-  border: "1px solid #DCD6C8",
-  borderRadius: "8px",
-  background: "#FEFDFB",
-  cursor: "pointer",
-};
-
-const fileName: React.CSSProperties = {
-  display: "block",
-  fontSize: "13px",
-  color: "#0B3D3A",
-  marginTop: "4px",
-  fontWeight: 500,
-};
-
-const modalError: React.CSSProperties = {
-  color: "#C0392B",
-  fontSize: "14px",
-  marginBottom: "12px",
-};
-
-const modalSubtext: React.CSSProperties = {
-  fontSize: "14px",
-  color: "#8A8577",
-  marginTop: "4px",
-};
-
-const modalActions: React.CSSProperties = {
-  display: "flex",
-  gap: "12px",
-  marginTop: "24px",
-  justifyContent: "flex-end",
-};
-
-const modalCancelBtn: React.CSSProperties = {
-  padding: "10px 24px",
-  borderRadius: "8px",
-  border: "1px solid #DCD6C8",
-  background: "transparent",
-  cursor: "pointer",
-  fontSize: "14px",
-  fontWeight: 500,
-  color: "#4A463E",
-};
-
-const modalDeleteBtn: React.CSSProperties = {
-  padding: "10px 24px",
-  borderRadius: "8px",
-  border: "none",
-  background: "#C0392B",
-  color: "#FFFFFF",
-  cursor: "pointer",
-  fontSize: "14px",
-  fontWeight: 600,
-};
-
-const modalUploadBtn: React.CSSProperties = {
-  padding: "10px 24px",
-  borderRadius: "8px",
-  border: "none",
-  background: "#0B3D3A",
-  color: "#FFFFFF",
-  cursor: "pointer",
-  fontSize: "14px",
-  fontWeight: 600,
-};

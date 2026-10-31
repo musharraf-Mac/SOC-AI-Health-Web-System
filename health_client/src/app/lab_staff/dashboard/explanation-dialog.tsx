@@ -13,17 +13,27 @@ export interface ExplanationReport {
   analysisError?: string;
 }
 
+interface SavedExplanation {
+  reportId: string;
+  status: string;
+  explanation?: string;
+  provider?: string;
+  model?: string;
+  generatedAt?: string;
+  error?: string;
+}
+
 export default function ExplanationDialog({ report, onClose }: {
   report: ExplanationReport;
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const [details, setDetails] = useState<ExplanationReport | null>(null);
+  const [details, setDetails] = useState<SavedExplanation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const loadExplanation = useCallback((signal?: AbortSignal) => {
-    return apiFetch<ExplanationReport>(`/api/reports/${encodeURIComponent(report.id)}`, {
+    return apiFetch<SavedExplanation>(`/api/reports/${encodeURIComponent(report.id)}/explanation`, {
       signal,
       cache: "no-store",
     }).then((data) => {
@@ -52,7 +62,7 @@ export default function ExplanationDialog({ report, onClose }: {
     };
   }, [loadExplanation]);
 
-  const explanation = details?.analysisResult?.trim();
+  const explanation = details?.explanation?.trim();
   const waiting = details && ["PENDING", "PROCESSING", "PROCESSED"].includes(details.status);
   const closeDialog = () => {
     // Close before unmounting so the browser restores focus to the opening button.
@@ -98,7 +108,7 @@ export default function ExplanationDialog({ report, onClose }: {
               : details?.status === "FAILED"
                 ? "An explanation could not be generated for this report. The original PDF is still available."
                 : "No explanation is available for this report yet."}</p>
-            {details?.analysisError && <p className="mt-2">{details.analysisError}</p>}
+            {details?.error && <p className="mt-2">{details.error}</p>}
           </div>
         )}
         {!loading && (error || !explanation) && (
