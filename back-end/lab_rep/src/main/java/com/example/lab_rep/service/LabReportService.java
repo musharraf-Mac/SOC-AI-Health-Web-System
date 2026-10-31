@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 import com.example.lab_rep.model.LabReport;
+import com.example.lab_rep.dto.ReportExplanation;
 import com.example.lab_rep.repository.LabReportRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -124,7 +125,44 @@ public class LabReportService {
         }
         return report;
     }
-    public List<LabReport> getAllReports() { return repository.findAll().stream().map(this::hydrate).toList(); }
+    public List<LabReport> getAllReports() { return getAllReports(true); }
+    public List<LabReport> getAllReports(boolean includeExplanation) {
+        var reports = repository.findAll();
+        return includeExplanation ? reports.stream().map(this::hydrate).toList() : reports;
+    }
+    // File endpoints must authorize using metadata before reading private cloud objects.
+    public LabReport requireReportMetadata(String id) {
+        return repository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Report not found"));
+    }
+    public static class ContentUnavailableException extends RuntimeException {
+        public ContentUnavailableException(String message, Throwable cause) { super(message, cause); }
+    }
+    public ReportExplanation explanation(LabReport report) {
+        if (!"COMPLETED".equals(report.getStatus())) {
+            return new ReportExplanation(report.getId(), report.getFileName(), report.getStatus(), null,
+                null, null, null, report.getAnalysisError());
+        }
+        try {
+            if (report.getExplanationObjectPath() != null) {
+                var saved = json.readTree(storage.read(report.getExplanationObjectPath()));
+                if (saved == null || !report.getId().equals(saved.path("reportId").asText())
+                        || !saved.path("explanation").isTextual() || saved.path("explanation").asText().isBlank()) {
+                    throw new IOException("Invalid explanation document");
+                }
+                return new ReportExplanation(report.getId(), report.getFileName(), report.getStatus(),
+                    saved.path("explanation").asText(), saved.path("provider").asText(report.getAnalysisProvider()),
+                    saved.path("model").asText(report.getAnalysisModel()), saved.path("generatedAt").asText(null), null);
+            }
+            // Older reports may still hold their explanation in MongoDB until migration.
+            if (report.getAnalysisResult() != null && !report.getAnalysisResult().isBlank()) {
+                return new ReportExplanation(report.getId(), report.getFileName(), report.getStatus(),
+                    report.getAnalysisResult(), report.getAnalysisProvider(), report.getAnalysisModel(), null, null);
+            }
+            throw new IOException("Missing explanation document");
+        } catch (Exception failure) {
+            throw new ContentUnavailableException("Stored explanation is temporarily unavailable. Please try again.", failure);
+        }
+    }
     public List<LabReport> getReportsByPatient(String email) { return repository.findByPatientEmail(email).stream().map(this::hydrate).toList(); }
     public Optional<LabReport> getReportByFileId(String id) { return repository.findById(id).or(() -> repository.findByFileId(id)).map(this::hydrate); }
     public Optional<LabReport> getReportById(String id) { return getReportByFileId(id); }

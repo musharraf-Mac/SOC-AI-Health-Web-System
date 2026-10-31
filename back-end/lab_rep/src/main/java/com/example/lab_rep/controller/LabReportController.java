@@ -38,14 +38,33 @@ public class LabReportController {
         this.access = access;
     }
 
-    @GetMapping("/{id}/file")
-    public ResponseEntity<byte[]> download(@PathVariable String id) throws java.io.IOException {
-        LabReport report = reportService.requireReport(id);
+    @GetMapping({"/{id}/file", "/{id}/pdf"})
+    public ResponseEntity<?> download(@PathVariable String id) {
+        LabReport report = reportService.requireReportMetadata(id);
         access.patientOrStaff(report.getPatientEmail());
-        return ResponseEntity.ok().contentType(org.springframework.http.MediaType.APPLICATION_PDF)
-            .header("Cache-Control", "no-store")
-            .header("Content-Disposition", org.springframework.http.ContentDisposition.inline().filename(report.getFileName(), java.nio.charset.StandardCharsets.UTF_8).build().toString())
-            .body(reportService.download(report));
+        try {
+            return ResponseEntity.ok().contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .header("Cache-Control", "no-store")
+                .header("X-Content-Type-Options", "nosniff")
+                .header("Content-Disposition", org.springframework.http.ContentDisposition.inline()
+                    .filename(report.getFileName() == null ? "report.pdf" : report.getFileName(), java.nio.charset.StandardCharsets.UTF_8).build().toString())
+                .body(reportService.download(report));
+        } catch (java.io.IOException | RuntimeException failure) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).header("Cache-Control", "no-store")
+                .body(Map.of("error", "Stored PDF is temporarily unavailable. Please try again."));
+        }
+    }
+
+    @GetMapping("/{id}/explanation")
+    public ResponseEntity<?> explanation(@PathVariable String id) {
+        LabReport report = reportService.requireReportMetadata(id);
+        access.patientOrStaff(report.getPatientEmail());
+        try {
+            return ResponseEntity.ok().header("Cache-Control", "no-store").body(reportService.explanation(report));
+        } catch (LabReportService.ContentUnavailableException failure) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).header("Cache-Control", "no-store")
+                .body(Map.of("error", failure.getMessage()));
+        }
     }
 
     @PostMapping("/{id}/retry")
@@ -104,9 +123,9 @@ public class LabReportController {
     }
 
     @GetMapping ("/view")
-    public ResponseEntity<List<LabReport>> getAllReports() {
+    public ResponseEntity<List<LabReport>> getAllReports(@RequestParam(defaultValue = "true") boolean includeExplanation) {
         access.staff();
-        return ResponseEntity.ok(reportService.getAllReports());
+        return ResponseEntity.ok().header("Cache-Control", "no-store").body(reportService.getAllReports(includeExplanation));
     }
 
     @GetMapping("/{fileId}")
