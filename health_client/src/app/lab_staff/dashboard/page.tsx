@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, reportFileUrl } from "@/lib/api";
+import ExplanationDialog from "./explanation-dialog";
 
 interface LabReport {
   id: string;
@@ -10,6 +11,7 @@ interface LabReport {
   patientEmail: string;
   reportType: string;
   fileId: string;
+  fileName?: string;
   status: string;
   uploadedAt: string;
   analysisResult?: string;
@@ -23,6 +25,8 @@ export default function LabStaffDashboard() {
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState<LabReport | null>(null);
+  const [explanationReport, setExplanationReport] = useState<LabReport | null>(null);
+  const [openingPdf, setOpeningPdf] = useState<string | null>(null);
   
   // Upload state
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -34,23 +38,26 @@ export default function LabStaffDashboard() {
     file: null as File | null,
   });
 
-  const fetchReports = async () => {
+  const loadReports = useCallback((signal?: AbortSignal) => {
+    return apiFetch<LabReport[]>("/api/reports/view", { signal, cache: "no-store" })
+      .then((data) => { if (!signal?.aborted) setReports(data); })
+      .catch(() => {
+        if (!signal?.aborted) setError("Failed to load reports. Please try again.");
+      })
+      .finally(() => { if (!signal?.aborted) setLoading(false); });
+  }, []);
+
+  const fetchReports = () => {
     setLoading(true);
     setError("");
-    try {
-      const data = await apiFetch<LabReport[]>("/api/reports/view");
-      setReports(data);
-    } catch (err) {
-      setError("Failed to load reports. Please try again.");
-      console.error("Error fetching reports:", err);
-    } finally {
-      setLoading(false);
-    }
+    return loadReports();
   };
 
   useEffect(() => {
-    fetchReports();
-  }, []);
+    const controller = new AbortController();
+    void loadReports(controller.signal);
+    return () => controller.abort();
+  }, [loadReports]);
   
 
   // Handle Upload
@@ -95,7 +102,7 @@ export default function LabStaffDashboard() {
       await apiFetch(`/api/reports/delete/${reportId}`, {
         method: "DELETE",
       });
-      setReports(reports.filter((r) => r.id !== reportId));
+      setReports((current) => current.filter((r) => r.id !== reportId));
       setShowDeleteModal(false);
       setSelectedReport(null);
     } catch (err) {
@@ -103,6 +110,34 @@ export default function LabStaffDashboard() {
       console.error("Error deleting report:", err);
     } finally {
       setDeleteLoading(null);
+    }
+  };
+
+  const handleOpenPdf = async (report: LabReport) => {
+    // Open during the click so the browser does not block the tab after the fetch.
+    const tab = window.open("", "_blank");
+    if (!tab) {
+      setError("Please allow popups for this site to open the report PDF.");
+      return;
+    }
+    tab.opener = null;
+    tab.document.title = "Loading report PDF";
+    tab.document.body.textContent = "Loading report PDF...";
+    setOpeningPdf(report.id);
+    setError("");
+    try {
+      const url = await reportFileUrl(report.id);
+      if (tab.closed) {
+        URL.revokeObjectURL(url);
+        return;
+      }
+      tab.location.replace(url);
+      window.setTimeout(() => URL.revokeObjectURL(url), 120000);
+    } catch {
+      tab.close();
+      setError("Unable to open this report PDF. Please try again.");
+    } finally {
+      setOpeningPdf(null);
     }
   };
 
@@ -133,8 +168,10 @@ export default function LabStaffDashboard() {
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { bg: string; color: string }> = {
       PENDING: { bg: "#FFF3E0", color: "#E65100" },
+      PROCESSING: { bg: "#E3F2FD", color: "#0D47A1" },
       PROCESSED: { bg: "#E3F2FD", color: "#0D47A1" },
       COMPLETED: { bg: "#E8F5E9", color: "#1B5E20" },
+      FAILED: { bg: "#FDE8E8", color: "#C0392B" },
     };
     const style = styles[status] || { bg: "#F5F5F5", color: "#616161" };
     return (
@@ -223,7 +260,7 @@ export default function LabStaffDashboard() {
               <thead style={{ color: "#1B1B18" }}>
                 <tr>
                   <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "left", width: "15%" }}>
-                    File ID / SR#
+                    Report / SR#
                   </th>
                   <th className="font-bold text-black text-sm uppercase tracking-wide" style={{ padding: "16px 12px", textAlign: "left", width: "18%" }}>
                     Patient
@@ -253,6 +290,9 @@ export default function LabStaffDashboard() {
                   >
                     <td className="font-semibold text-black" style={{ padding: "12px 8px" }}>
                       {index + 1}
+                      <div style={{ marginTop: "4px", fontSize: "12px", fontWeight: 400, overflowWrap: "anywhere" }}>
+                        {report.fileName || report.id}
+                      </div>
                     </td>
                     <td style={{ ...tdName, padding: "12px 8px" }}>{report.patientName}</td>
                     <td style={{ ...tdEmail, padding: "12px 8px" }}>{report.patientEmail}</td>
@@ -264,13 +304,20 @@ export default function LabStaffDashboard() {
                     <td style={{ padding: "12px 8px" }}>{getStatusBadge(report.status)}</td>
                     <td style={{ padding: "12px 8px", whiteSpace: "nowrap", textAlign: "center" }}>{formatDate(report.uploadedAt)}</td>
                     <td style={{ padding: "12px 8px" }}>
-                      <div className="flex justify-center gap-3">
+                      <div style={actionButtons}>
                         <button
-                          onClick={() => router.push(`/lab_staff/reports/${report.id}`)}
+                          onClick={() => handleOpenPdf(report)}
                           style={viewBtn}
-                          title="View Report"
+                          title="Open original PDF in a new tab"
+                          disabled={openingPdf !== null}
                         >
-                          👁️
+                          {openingPdf === report.id ? "Opening..." : "View PDF ↗"}
+                        </button>
+                        <button
+                          onClick={() => setExplanationReport(report)}
+                          style={{ ...viewBtn, background: "#E8F5E9", color: "#1B5E20" }}
+                        >
+                          View explanation
                         </button>
                         <button
                           onClick={() => {
@@ -281,7 +328,7 @@ export default function LabStaffDashboard() {
                           title="Delete Report"
                           disabled={deleteLoading === report.id}
                         >
-                          {deleteLoading === report.id ? "..." : "🗑️"}
+                          {deleteLoading === report.id ? "Deleting..." : "Delete"}
                         </button>
                       </div>
                     </td>
@@ -292,6 +339,14 @@ export default function LabStaffDashboard() {
           </div>
         )}
       </div>
+
+      {explanationReport && (
+        <ExplanationDialog
+          key={explanationReport.id}
+          report={explanationReport}
+          onClose={() => setExplanationReport(null)}
+        />
+      )}
 
       {/* UPLOAD MODAL */}
       {showUploadModal && (
@@ -410,8 +465,9 @@ export default function LabStaffDashboard() {
               <button
                 onClick={() => handleDelete(selectedReport.id)}
                 style={modalDeleteBtn}
+                disabled={deleteLoading !== null}
               >
-                Delete Report
+                {deleteLoading ? "Deleting..." : "Delete Report"}
               </button>
             </div>
           </div>
@@ -597,7 +653,7 @@ const tableContainer: React.CSSProperties = {
   background: "#FFFFFF",
   borderRadius: "12px",
   border: "1px solid #DCD6C8",
-  overflow: "hidden",
+  overflowX: "auto",
   color:"black"
 };
 
@@ -628,6 +684,9 @@ const reportTypeBadge: React.CSSProperties = {
 
 const actionButtons: React.CSSProperties = {
   display: "flex",
+  flexWrap: "wrap",
+  justifyContent: "center",
+  minWidth: "150px",
   gap: "8px",
 };
 
@@ -636,8 +695,11 @@ const viewBtn: React.CSSProperties = {
   borderRadius: "6px",
   border: "none",
   background: "#E3F2FD",
+  color: "#0D47A1",
   cursor: "pointer",
-  fontSize: "16px",
+  fontSize: "13px",
+  fontWeight: 600,
+  whiteSpace: "nowrap",
   transition: "background 0.2s",
 };
 
@@ -667,6 +729,7 @@ const modalOverlay: React.CSSProperties = {
 
 const modal: React.CSSProperties = {
   background: "#FFFFFF",
+  color: "#1B1B18",
   borderRadius: "12px",
   padding: "32px",
   maxWidth: "480px",
