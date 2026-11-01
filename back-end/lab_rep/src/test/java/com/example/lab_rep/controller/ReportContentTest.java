@@ -46,17 +46,15 @@ class ReportContentTest {
     }
     private String staff() { return token("LAB_STAFF", "staff@example.test"); }
 
-    @Test void staffReadsSavedJsonAndBothPdfRoutes() throws Exception {
+    @Test void staffReadsSavedJsonAndPdf() throws Exception {
         mvc.perform(get("/api/reports/r1/explanation").header("Authorization", staff()))
             .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
             .andExpect(jsonPath("$.reportId").value("r1")).andExpect(jsonPath("$.explanation").value("Saved explanation"))
             .andExpect(jsonPath("$.model").value("qwen3.5:4b"));
-        for (String route : List.of("pdf", "file")) {
-            mvc.perform(get("/api/reports/r1/" + route).header("Authorization", staff()))
-                .andExpect(status().isOk()).andExpect(content().contentType("application/pdf"))
-                .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(content().bytes("%PDF-sample".getBytes(StandardCharsets.UTF_8)));
-        }
+        mvc.perform(get("/api/reports/r1/pdf").header("Authorization", staff()))
+            .andExpect(status().isOk()).andExpect(content().contentType("application/pdf"))
+            .andExpect(header().string("Cache-Control", "no-store"))
+            .andExpect(content().bytes("%PDF-sample".getBytes(StandardCharsets.UTF_8)));
         verify(storage, times(1)).read(report.getExplanationObjectPath());
     }
     @Test void ownerCanReadButOtherPatientsAndAnonymousCannotTouchStorage() throws Exception {

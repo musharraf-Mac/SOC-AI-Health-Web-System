@@ -106,7 +106,7 @@ All report endpoints require a login JWT and the gateway-supplied API key. LAB_S
 - POST /api/reports/upload: multipart patientName, patientEmail, reportType, file.
 - GET /api/reports/view: staff list.
 - GET /api/reports/{id}: metadata and explanation, accepts legacy file IDs too.
-- GET /api/reports/{id}/file: authenticated PDF response.
+- GET /api/reports/{id}/pdf: authenticated PDF response.
 - GET /api/reports/patient/{email}: patient-owned list.
 - POST /api/reports/{id}/retry: retry a failed/pending explanation.
 - DELETE /api/reports/delete/{id}: delete both objects and metadata; failed storage deletion retains the metadata for retry.
@@ -130,7 +130,7 @@ Before deployment, test with a non-sensitive sample: upload through gateway; ver
 
 All requests go through the API gateway and require the signed-in user's Bearer token. Lab staff can read any report; a patient can only read their own. The bucket stays private; the backend reads the stored object after checking access.
 
-- `GET /api/reports/{id}/pdf`: original PDF with `Content-Type: application/pdf` and inline disposition. `/api/reports/{id}/file` remains supported for existing clients.
+- `GET /api/reports/{id}/pdf`: original PDF with `Content-Type: application/pdf` and inline disposition.
 - `GET /api/reports/{id}/explanation`: JSON with `reportId`, `fileName`, `status`, `explanation`, `provider`, `model`, `generatedAt`, and `error`. The explanation comes from the report's saved JSON object in Cloud Storage. Older unmigrated reports can still use their stored MongoDB explanation.
 - Pending, processing, or failed analysis returns HTTP 200 with its status and a null explanation. This read endpoint does not run AI again.
 - Unknown report: 404. No login: 401 for an existing report. Wrong patient/role: 403. Unreadable, missing, or invalid saved content: 503 with a safe error message.

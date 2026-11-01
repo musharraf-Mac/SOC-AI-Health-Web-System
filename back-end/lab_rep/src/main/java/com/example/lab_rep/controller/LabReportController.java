@@ -38,7 +38,7 @@ public class LabReportController {
         this.access = access;
     }
 
-    @GetMapping({"/{id}/file", "/{id}/pdf"})
+    @GetMapping("/{id}/pdf")
     public ResponseEntity<?> download(@PathVariable String id) {
         LabReport report = reportService.requireReportMetadata(id);
         access.patientOrStaff(report.getPatientEmail());
