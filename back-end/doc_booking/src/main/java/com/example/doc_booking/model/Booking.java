@@ -14,6 +14,9 @@ public class Booking {
     private String doctorName;
     private String bookingDate;
     private String bookingTime;
+    private int durationMinutes;
+    public int getDurationMinutes() { return durationMinutes; }
+    public void setDurationMinutes(int minutes) { durationMinutes = minutes; }
     private String tokenNumber;
     private String status;
     private LocalDateTime createdAt;
