@@ -10,9 +10,11 @@ import com.example.doctor_page.model.Patient;
 
 @Repository
 public interface PatientRepository extends MongoRepository<Patient, String> {
-    
-    Optional<Patient> findByTokenNumber(String tokenNumber);    
-    
+
+    Optional<Patient> findByTokenNumberAndDoctorEmailIgnoreCase(String tokenNumber, String doctorEmail);
+    List<Patient> findByDoctorEmailIgnoreCase(String doctorEmail);
+    List<Patient> findByPatientEmailIgnoreCaseAndDoctorEmailIgnoreCase(String patientEmail, String doctorEmail);
+
     List<Patient> findByPatientEmail(String patientEmail);
 
     List<Patient> findByPatientEmailAndStatus(String patientEmail, String status);
