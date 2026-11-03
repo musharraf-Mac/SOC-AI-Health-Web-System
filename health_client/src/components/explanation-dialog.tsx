@@ -23,6 +23,7 @@ interface SavedExplanation {
   error?: string;
 }
 
+// Shared by the patient and lab staff dashboards.
 export default function ExplanationDialog({ report, onClose }: {
   report: ExplanationReport;
   onClose: () => void;

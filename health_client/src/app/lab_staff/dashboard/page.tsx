@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, reportFileUrl } from "@/lib/api";
-import ExplanationDialog, { type ExplanationReport } from "./explanation-dialog";
+import ExplanationDialog, { type ExplanationReport } from "@/components/explanation-dialog";
 import styles from "./dashboard.module.css";
 
 interface LabReport extends ExplanationReport {

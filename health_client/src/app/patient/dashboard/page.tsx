@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, reportFileUrl } from "@/lib/api";
+import ExplanationDialog from "@/components/explanation-dialog";
 
 const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8087";
 // ============ Types ============
@@ -41,6 +42,7 @@ interface LabReport {
   patientEmail: string;
   reportType: string;
   fileId: string;
+  fileName?: string;
   status: string;
   uploadedAt: string;
   analysisResult?: string;
@@ -78,6 +80,7 @@ export default function PatientDashboard() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [labReports, setLabReports] = useState<LabReport[]>([]);
+  const [explanationReport, setExplanationReport] = useState<LabReport | null>(null);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [bookingDate, setBookingDate] = useState("");
@@ -761,6 +764,8 @@ export default function PatientDashboard() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 12,
                     padding: "12px 0",
                     borderBottom: "1px solid #EEE",
                   }}
@@ -782,7 +787,7 @@ export default function PatientDashboard() {
                       {report.status}
                     </span>
                   </div>
-                  <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button
                       onClick={() => viewFile(report.id)}
                       style={{
@@ -794,7 +799,21 @@ export default function PatientDashboard() {
                         cursor: "pointer",
                       }}
                     >
-                      👁️ View
+                      👁️ View PDF
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setExplanationReport(report)}
+                      style={{
+                        padding: "6px 16px",
+                        background: "#E8F5E9",
+                        color: "#1B5E20",
+                        border: "1px solid #DCD6C8",
+                        borderRadius: 6,
+                        cursor: "pointer",
+                      }}
+                    >
+                      View explanation
                     </button>
                     <button
                       onClick={() => downloadFile(report.id, `${report.reportType}.pdf`)}
@@ -817,7 +836,13 @@ export default function PatientDashboard() {
         )}
         
       </div>
-      
+      {explanationReport && (
+        <ExplanationDialog
+          key={explanationReport.id}
+          report={explanationReport}
+          onClose={() => setExplanationReport(null)}
+        />
+      )}
     </div>
   );
 }
