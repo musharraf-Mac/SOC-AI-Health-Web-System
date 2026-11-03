@@ -2,6 +2,23 @@
 
 A distributed, microservices-based clinic management system built for the Service-Oriented Computing coursework. Patients can register, book appointments, track BMI, view prescriptions, and receive AI-assisted explanations of lab reports. Doctors manage their patient queue and write prescriptions. Lab staff upload reports for OCR + AI explanation.
 
+## Live Application
+
+**Visit the website:** [https://health-web-system.netlify.app](https://health-web-system.netlify.app)
+
+- **Frontend:** hosted on Netlify.
+- **Backend:** the API gateway and Spring Boot microservices are hosted on **Google Cloud Platform (GCP) — Cloud Run**.
+- **Sample backend URL:** `https://your-api-gateway.run.app` — an illustrative placeholder, not the deployed backend address. Actual backend deployment URLs are intentionally omitted from this README.
+
+For a production frontend build, configure the gateway URL in the hosting environment:
+
+```env
+# Example only: replace privately with your deployed gateway URL.
+NEXT_PUBLIC_API_URL=https://your-api-gateway.run.app
+```
+
+For local frontend development, use `NEXT_PUBLIC_API_URL=http://localhost:8087`. The localhost addresses below describe local development, not the live deployment. API URLs are public configuration; API keys, JWT signing secrets, and database credentials must remain in backend environment settings and must never use the `NEXT_PUBLIC_` prefix.
+
 ---
 
 ## Architecture
@@ -55,6 +72,7 @@ Every request from the client goes through the Gateway. The Gateway validates th
 - **Auth:** JWT (HS256), shared secret across services for independent verification
 - **AI/OCR:** Tesseract (Tess4J) for text extraction, hosted LLM API for plain-language report explanations
 - **Containerization:** Docker, Docker Compose
+- **Hosting:** Netlify (frontend), GCP Cloud Run (backend gateway and microservices)
 
 ---
 
