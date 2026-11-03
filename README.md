@@ -160,8 +160,9 @@ In normal operation, the client never sends this directly — the Gateway attach
 
 Test credentials (development only):
 ```
-Patient:  patient@test.com / password123
-Doctor:   doctor@test.com  / password123
+Patient:  patient@test.com / 123456
+Doctor:   doctor@test.com  / 123456
+Lab Staff: lab@test.com / 123456
 ```
 
 ---
