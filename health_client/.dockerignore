@@ -43,3 +43,12 @@ coverage
 *.pid
 *.seed
 *.pid.lock
+# Never send credentials to the Docker builder
+.env
+.env.*
+*.pem
+*.key
+*.p12
+gcp-adc.json
+application_default_credentials.json
+*service-account*.json
