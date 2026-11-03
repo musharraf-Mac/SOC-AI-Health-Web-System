@@ -55,8 +55,8 @@ public class JwtUtil {
                 .signWith(getSigningKey())
                 .compact();
         } catch (Exception e) {
-            log.error("Error generating token: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to generate JWT token: " + e.getMessage());
+            log.error("Error generating token");
+            throw new RuntimeException("Failed to generate JWT token");
         }
     }
 
@@ -69,20 +69,20 @@ public class JwtUtil {
                 .getPayload();
             return claims.getSubject();
         } catch (ExpiredJwtException e) {
-            log.error("Token expired: {}", e.getMessage());
+            log.error("Token expired");
             throw new RuntimeException("Token has expired. Please login again.");
         } catch (MalformedJwtException e) {
-            log.error("Malformed token: {}", e.getMessage());
+            log.error("Malformed token");
             throw new RuntimeException("Invalid token format. Please provide a valid token.");
         } catch (SignatureException e) {
-            log.error("Invalid signature: {}", e.getMessage());
+            log.error("Invalid signature");
             throw new RuntimeException("Invalid token signature. Token may have been tampered with.");
         } catch (UnsupportedJwtException e) {
-            log.error("Unsupported token: {}", e.getMessage());
+            log.error("Unsupported token");
             throw new RuntimeException("Unsupported token format.");
         } catch (Exception e) {
-            log.error("Error extracting userId from token: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to parse token: " + e.getMessage());
+            log.error("Error extracting userId from token");
+            throw new RuntimeException("Failed to parse token");
         }
     }
 
@@ -95,7 +95,7 @@ public class JwtUtil {
                 .getPayload();
             return claims.get("role", String.class);
         } catch (Exception e) {
-            log.error("Error extracting role from token: {}", e.getMessage());
+            log.error("Error extracting role from token");
             throw new RuntimeException("Failed to extract role from token: " + e.getMessage());
         }
     }
@@ -128,10 +128,10 @@ public class JwtUtil {
             log.warn("Token validation failed: Unsupported token");
             return false;
         } catch (IllegalArgumentException e) {
-            log.warn("Token validation failed: {}", e.getMessage());
+            log.warn("Token validation failed");
             return false;
         } catch (Exception e) {
-            log.warn("Token validation failed: {}", e.getMessage());
+            log.warn("Token validation failed");
             return false;
         }
     }
