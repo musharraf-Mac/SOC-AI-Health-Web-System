@@ -209,11 +209,11 @@ Each backend folder is an independent Spring Boot Maven project with its own `Do
 
 | Student | Component | Key Contributions |
 |---|---|---|
-| [Name] | Client + API Gateway + Auth Service | Next.js client, Gateway routing/JWT/CORS/rate limiting, Auth Service |
-| [Name] | Appointment Service | Booking logic, token numbering, doctor queue |
-| [Name] | Doctor / Prescription Service | Prescription CRUD, doctor dashboard endpoints |
-| [Name] | BMI Service | BMI calculation, history tracking, weight-goal suggestions |
-| [Name] | Lab Report Service | OCR pipeline, AI explanation integration |
+| Musharraf (Musharraf-mac) | Client + API Gateway + Auth Service + Full Deployment + Leader | Next.js client, Gateway routing/JWT/CORS/rate limiting, Auth Service |
+| Abisha | Appointment Service | Booking logic, token numbering, doctor queue |
+| Theebapriya | Doctor / Prescription Service | Prescription CRUD, doctor dashboard endpoints |
+| Nivedha | BMI Service | BMI calculation, history tracking, weight-goal suggestions |
+| Niroshini | Lab Report Service | OCR pipeline, AI explanation integration |
 
 ---
 
