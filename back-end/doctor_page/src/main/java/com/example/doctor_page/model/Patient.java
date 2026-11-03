@@ -16,12 +16,12 @@ public class Patient {
     private String bookingTime;
     private String tokenNumber;
     private String status; // PENDING, CONFIRMED, CANCELLED
-    private String createdAt;
+    private java.time.LocalDateTime createdAt;
 
     // Constructors
     public Patient() {}
 
-    public Patient(String patientName, String patientEmail, String doctorName, String doctorEmail, String bookingDate, String bookingTime, String tokenNumber, String status, String createdAt) {
+    public Patient(String patientName, String patientEmail, String doctorName, String doctorEmail, String bookingDate, String bookingTime, String tokenNumber, String status, java.time.LocalDateTime createdAt) {
         this.patientName = patientName;
         this.patientEmail = patientEmail;
         this.doctorName = doctorName;
@@ -94,10 +94,10 @@ public class Patient {
     public void setStatus(String status) {
         this.status = status;
     }
-    public String getCreatedAt() {
+    public java.time.LocalDateTime getCreatedAt() {
         return createdAt;
     }
-    public void setCreatedAt(String createdAt) {
+    public void setCreatedAt(java.time.LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
 }
