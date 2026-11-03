@@ -1,70 +1,44 @@
 package com.example.doc_booking.service;
-
-import java.time.LocalDateTime;
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.example.doc_booking.dto.BookingRequest;
-import com.example.doc_booking.model.Booking;
-import com.example.doc_booking.model.Doctor;
+import com.example.doc_booking.model.*;
 import com.example.doc_booking.repository.BookingRepository;
-
+import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 @Service
 public class BookingService {
-    @Autowired
-    private BookingRepository bookingRepository;
-
-    @Autowired
-    private DoctorService doctorService;
-
-    public Booking createBooking(BookingRequest request) {
-        Doctor doctor = doctorService.getDoctorByEmail(request.getDoctorEmail());
-        if (doctor == null) {
-            throw new RuntimeException("Doctor not found");
-        }
-
-        List<Booking> existingBookings = bookingRepository
-            .findByDoctorEmailAndBookingDate(request.getDoctorEmail(), request.getBookingDate());
-        
-        boolean slotTaken = existingBookings.stream()
-            .anyMatch(b -> b.getBookingTime().equals(request.getBookingTime()));
-        
-        if (slotTaken) {
-            throw new RuntimeException("Time slot already booked");
-        }
-
+    private final BookingRepository bookings;
+    private final DoctorService doctors;
+    public BookingService(BookingRepository bookings, DoctorService doctors) { this.bookings = bookings; this.doctors = doctors; }
+    public Booking createBooking(BookingRequest request, RegisteredUser patient) {
+        Doctor doctor = doctors.getDoctorByEmail(request.getDoctorEmail());
+        if (doctor == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Registered doctor not found");
+        var slot = new AvailabilitySlot(request.getBookingDate(), request.getBookingTime());
+        if (!doctors.isFuture(slot) || !doctor.getAvailableSlots().contains(slot))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This date/time is not available. Refresh the doctor's availability.");
+        if (doctors.isReserved(doctor, slot, bookings.findByDoctorEmailIgnoreCase(doctor.getEmail())))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This time slot has already been booked.");
         Booking booking = new Booking();
-        booking.setPatientEmail(request.getPatientEmail());
-        booking.setPatientName(request.getPatientName());
-        booking.setDoctorEmail(request.getDoctorEmail());
-        booking.setDoctorName(doctor.getName());
-        booking.setBookingDate(request.getBookingDate());
-        booking.setBookingTime(request.getBookingTime());
-        booking.setStatus("CONFIRMED");
-        booking.setCreatedAt(LocalDateTime.now());
-        
-        String token = generateToken(request.getBookingDate(), request.getDoctorEmail());
-        booking.setTokenNumber(token);
-
-        return bookingRepository.save(booking);
+        // A deterministic _id and insert (not save/upsert) make simultaneous claims atomic in the existing collection.
+        String slotKey = doctor.getEmail().toLowerCase(Locale.ROOT) + "|" + slot.date() + "|" + slot.time();
+        booking.setId(UUID.nameUUIDFromBytes(slotKey.getBytes(StandardCharsets.UTF_8)).toString());
+        booking.setPatientEmail(patient.getEmail()); booking.setPatientName(patient.getFullname());
+        booking.setDoctorEmail(doctor.getEmail()); booking.setDoctorName(doctor.getName());
+        booking.setBookingDate(slot.date()); booking.setBookingTime(slot.time());
+        booking.setDurationMinutes(doctors.duration(doctor, slot));
+        booking.setStatus("CONFIRMED"); booking.setCreatedAt(LocalDateTime.now());
+        booking.setTokenNumber("TKN-" + slot.date().replace("-", "") + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT));
+        try { return bookings.insert(booking); }
+        catch (DuplicateKeyException e) { throw new ResponseStatusException(HttpStatus.CONFLICT, "This time slot has already been booked."); }
     }
-
-    public List<Booking> getPatientBookings(String patientEmail) {
-        return bookingRepository.findByPatientEmail(patientEmail);
+    public List<Booking> getPatientBookings(String email) { return bookings.findByPatientEmailIgnoreCase(email); }
+    public void deleteBooking(String id, RegisteredUser patient) {
+        var booking = bookings.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
+        if (!patient.getEmail().equalsIgnoreCase(booking.getPatientEmail())) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Booking access denied");
+        bookings.deleteById(id);
     }
-
-    private String generateToken(String date, String doctorEmail) {
-        String datePrefix = date.replace("-", "");
-        long count = bookingRepository.findByDoctorEmailAndBookingDate(doctorEmail, date).size() + 1;
-        return "TKN-" + datePrefix + "-" + String.format("%03d", count);
-    }
-    public boolean existsById(String id) {  
-    return bookingRepository.existsById(id);
-}
-
-public void deleteBooking(String id) {  
-    bookingRepository.deleteById(id);
-}
 }
