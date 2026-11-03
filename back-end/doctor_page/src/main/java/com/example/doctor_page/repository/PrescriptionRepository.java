@@ -11,5 +11,6 @@ import com.example.doctor_page.model.Prescription;
 @Repository
 public interface PrescriptionRepository extends MongoRepository<Prescription, String> {
     List<Prescription> findByPatientEmail(String patientEmail);
+    List<Prescription> findByPatientEmailAndDoctorEmailIgnoreCase(String patientEmail, String doctorEmail);
     Optional<Prescription>findById(String id);
 }
