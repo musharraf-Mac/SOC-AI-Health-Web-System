@@ -1,82 +1,43 @@
 package com.example.doc_booking.controller;
-
-import java.util.List;
-import java.util.Map;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.example.doc_booking.dto.BookingRequest;
-import com.example.doc_booking.model.Booking;
-import com.example.doc_booking.model.Doctor;
-import com.example.doc_booking.service.BookingService;
-import com.example.doc_booking.service.DoctorService;
-
+import com.example.doc_booking.dto.*;
+import com.example.doc_booking.model.*;
+import com.example.doc_booking.security.BookingAccess;
+import com.example.doc_booking.service.*;
+import java.util.*;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/doc_booking")
-// @CrossOrigin(origins = "*")
 public class BookingController {
-
-    @Autowired
-    private DoctorService doctorService;
-
-    @Autowired
-    private BookingService bookingService;
-
-    @GetMapping("/doctors")
-    public ResponseEntity<List<Doctor>> getAllDoctors() {
-        return ResponseEntity.ok(doctorService.getAllDoctors());
+    @ModelAttribute public void privateResponse(jakarta.servlet.http.HttpServletResponse response) { response.setHeader("Cache-Control", "no-store"); }
+    @ExceptionHandler(org.springframework.dao.DataAccessException.class)
+    public ResponseEntity<?> storageError() { return ResponseEntity.status(503).header("Cache-Control", "no-store").body(Map.of("error", "Appointment storage is temporarily unavailable. Please try again.")); }
+    private final DoctorService doctors;
+    private final BookingService bookings;
+    private final BookingAccess access;
+    public BookingController(DoctorService doctors, BookingService bookings, BookingAccess access) { this.doctors = doctors; this.bookings = bookings; this.access = access; }
+    @GetMapping("/doctors") public List<Doctor> doctors() { access.require("PATIENT"); return doctors.getAllDoctors(); }
+    @GetMapping("/doctor/me/availability") public Doctor availability() { return doctors.profile(access.require("DOCTOR")); }
+    @PutMapping("/doctor/me/availability") public Doctor availability(@RequestBody AvailabilityRequest request) { return doctors.saveAvailability(access.require("DOCTOR"), request); }
+    @GetMapping("/doctor/{email}") public Doctor doctor(@PathVariable String email) {
+        access.require("PATIENT");
+        var doctor = doctors.getDoctorByEmail(email);
+        if (doctor == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Registered doctor not found");
+        return doctor;
     }
-
-    @GetMapping("/doctor/{email}")
-    public ResponseEntity<Doctor> getDoctorByEmail(@PathVariable String email) {
-        Doctor doctor = doctorService.getDoctorByEmail(email);
-        if (doctor == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(doctor);
+    @PostMapping("/book") public ResponseEntity<Booking> book(@RequestBody BookingRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(bookings.createBooking(request, access.require("PATIENT")));
     }
-
-    @PostMapping("/book")
-    public ResponseEntity<?> bookAppointment(@RequestBody BookingRequest request) {
-        try {
-            Booking booking = bookingService.createBooking(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(booking);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    @GetMapping("/patient/{email}/bookings") public List<Booking> bookings(@PathVariable String email) {
+        var patient = access.require("PATIENT");
+        if (!patient.getEmail().equalsIgnoreCase(email)) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Booking access denied");
+        return bookings.getPatientBookings(patient.getEmail());
     }
-
-    @GetMapping("/patient/{patientEmail}/bookings")
-    public ResponseEntity<List<Booking>> getPatientBookings(@PathVariable String patientEmail) {
-        return ResponseEntity.ok(bookingService.getPatientBookings(patientEmail));
+    @DeleteMapping("/delbooking/{id}") public Map<String, String> delete(@PathVariable String id) {
+        bookings.deleteBooking(id, access.require("PATIENT")); return Map.of("message", "Booking deleted successfully", "id", id);
     }
-
-    @DeleteMapping("/delbooking/{bookingId}")
-public ResponseEntity<?> deleteBooking(@PathVariable String bookingId) {  // ⭐ Changed Long to String
-    try {
-        if (!bookingService.existsById(bookingId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("error", "Booking not found with id: " + bookingId));
-        }
-        
-        bookingService.deleteBooking(bookingId);
-        return ResponseEntity.ok(Map.of(
-            "message", "Booking deleted successfully",
-            "id", bookingId
-        ));
-        
-    } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(Map.of("error", "Failed to delete booking: " + e.getMessage()));
+    @ExceptionHandler(ResponseStatusException.class) public ResponseEntity<?> error(ResponseStatusException e) {
+        return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", Objects.requireNonNullElse(e.getReason(), "Request failed")));
     }
-}
 }
