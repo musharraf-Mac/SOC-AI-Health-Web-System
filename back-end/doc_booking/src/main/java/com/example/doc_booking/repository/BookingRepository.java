@@ -9,7 +9,7 @@ import com.example.doc_booking.model.Booking;
 
 @Repository
 public interface BookingRepository extends MongoRepository<Booking, String> {
-    List<Booking> findByPatientEmail(String patientEmail);
+    List<Booking> findByPatientEmailIgnoreCase(String patientEmail);
     List<Booking> findByDoctorEmailAndBookingDate(String doctorEmail, String bookingDate);
-    List<Booking> findByDoctorEmail(String doctorEmail);
+    List<Booking> findByDoctorEmailIgnoreCase(String doctorEmail);
 }
