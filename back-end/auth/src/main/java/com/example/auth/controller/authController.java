@@ -52,8 +52,6 @@ public class authController {
    @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
-            log.info("=== /me endpoint called ===");
-            log.info("Authorization header: {}", authHeader);
             
             if (authHeader == null || authHeader.isEmpty()) {
                 log.warn("Authorization header is missing or empty");
@@ -72,10 +70,8 @@ public class authController {
             }
 
             String token = authHeader.substring(7);
-            log.info("Token extracted: {}...", token.substring(0, Math.min(token.length(), 30)));
             
             boolean isValid = jwtUtil.validateToken(token);
-            log.info("Token validation result: {}", isValid);
             
             if (!isValid) {
                 log.warn("Token validation failed");
@@ -86,17 +82,11 @@ public class authController {
             }
             
             String userId = jwtUtil.getUserIdFromToken(token);
-            log.info("User ID extracted from token: {}", userId);
             
             authUser user = authrepo.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
             
-            log.info("User found: {}", user.getEmail());
             
-            // DEBUG: Log all user fields
-            log.info("User fullname: '{}'", user.getFullname());
-            log.info("User email: '{}'", user.getEmail());
-            log.info("User role: '{}'", user.getRole());
             
             // Use HashMap instead of Map.of() to handle null values
             Map<String, Object> response = new HashMap<>();
@@ -106,7 +96,6 @@ public class authController {
             response.put("email", user.getEmail() != null ? user.getEmail() : "No email");
             response.put("role", user.getRole() != null ? user.getRole() : "No role");
             
-            log.info("Response map: {}", response);
             
             return ResponseEntity.ok(response);
             
@@ -162,13 +151,11 @@ public ResponseEntity<?> deleteAccount(@RequestHeader(value = "Authorization", r
         }
 
         String userId = jwtUtil.getUserIdFromToken(token);
-        log.info("Delete account requested for userId: {}", userId);
 
         authUser user = authrepo.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
         authrepo.delete(user);
-        log.info("Account deleted for email: {}", user.getEmail());
 
         return ResponseEntity.ok(Map.of("message", "Account deleted successfully"));
 
