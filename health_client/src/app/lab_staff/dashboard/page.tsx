@@ -10,8 +10,31 @@ interface LabReport extends ExplanationReport {
   patientEmail: string;
   uploadedAt: string;
 }
-const reportTypes = ["BLOOD_TEST", "URINE_TEST", "X_RAY", "MRI", "CT_SCAN", "ULTRASOUND", "PATHOLOGY", "OTHER"];
-const label = (value: string) => value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+const reportTypes = [
+  "BLOOD_TEST",
+  "URINE_TEST",
+  "CBC",
+  "LFT",
+  "KFT",
+  "LIPID_PROFILE",
+  "TFT",
+  "FASTING_BLOOD_SUGAR",
+  "URIC_ACID",
+  "IRON_PROFILE",
+  "VITAMIN_B12",
+  "FOLATE",
+  "SEMEN_ANALYSIS",
+  "PAP_SMEAR",
+  "WIDAL",
+  "HIV",
+  "HBSAG",
+  "BLOOD_GROUP",
+  "OTHER",
+];
+const label = (value: string) => value.split("_").map(part => {
+  if (part === part.toUpperCase() && part.length <= 5) return part;
+  return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+}).join(" ");
 const isProcessing = (status: string) => ["PENDING", "PROCESSING", "PROCESSED"].includes(status);
 const statusLabel = (status: string) => status === "COMPLETED" ? "Ready" : status === "FAILED" ? "Needs attention" : label(status);
 const dateLabel = (value: string) => {
