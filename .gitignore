@@ -40,3 +40,10 @@ package-lock.json
 # Local Google Application Default Credentials
 gcp-adc.json
 application_default_credentials.json
+# Environment files and downloaded service-account keys
+.env.*
+!.env.example
+!.env.*.example
+*service-account*.json
+*.p12
+*.key
