@@ -1,0 +1,90 @@
+.page { min-height: 100vh; background: #F6F3EC; color: #1B1B18; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.page button { cursor: pointer; transition: background .15s, border-color .15s; }
+.page button:disabled { cursor: wait; opacity: .55; }
+.page button:focus-visible, .page input:focus-visible, .page select:focus-visible { outline: 2px solid #0B3D3A; outline-offset: 3px; }
+.account { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.main { max-width: 1400px; margin: auto; padding: 40px 32px; }
+.heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #FF8A5B; margin: 0; }
+.heading h1 { font-family: 'Fraunces', Georgia, serif; font-size: 32px; font-weight: 400; color: #0B3D3A; margin: 8px 0 4px; }
+.profileButton { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; border: 2px solid #DCD6C8; background: white; font-size: 20px; }
+.profileButton:hover { background: #F6F3EC; border-color: #0B3D3A; }
+.logoutButton { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 8px; background: #FF8A5B; color: white; border: none; font-size: 14px; font-weight: 600; }
+.logoutButton:hover { background: #E67A4A; }
+.subtitle { color: #8A8577; font-size: 14px; line-height: 1.6; }
+.primary, .secondary, .danger { display: inline-flex; justify-content: center; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; border-radius: 8px; padding: 11px 17px; line-height: 1.4; white-space: nowrap; }
+.primary { background: #0B3D3A; color: white; border: 1px solid #0B3D3A; }
+.primary:hover { background: #082F2D; }
+.secondary { background: white; border: 1px solid #DCD6C8; color: #4A463E; }
+.secondary:hover { background: #F6F3EC; }
+.panel { border: 1px solid #DCD6C8; border-radius: 10px; background: white; overflow: hidden; }
+.toolbar { display: flex; gap: 12px; padding: 22px 24px 18px; align-items: center; }
+.search { display: flex; align-items: center; border: 1px solid #DCD6C8; border-radius: 8px; padding: 0 12px; flex: 1; max-width: 470px; background: #FEFDFB; }
+.search svg { width: 18px; height: 18px; color: #8A8577; flex-shrink: 0; }
+.search input { min-width: 0; width: 100%; padding: 11px 10px; font-size: 13px; background: transparent; }
+.search:focus-within { outline: 2px solid #0B3D3A; outline-offset: 2px; }
+.search input:focus-visible { outline: none; }
+.filter { margin-left: auto; }
+.filter select { border: 1px solid #DCD6C8; padding: 11px 30px 11px 12px; border-radius: 8px; background: white; font-size: 13px; }
+.listInfo { display: flex; justify-content: space-between; padding: 0 24px 16px; font-size: 11px; color: #8A8577; }
+.tableWrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+.table th { background: #F6F3EC; border-block: 1px solid #DCD6C8; padding: 13px 18px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; color: #4A463E; }
+.table td { padding: 18px; border-bottom: 1px solid #EEEAE0; vertical-align: middle; }
+.table tr:last-child td { border-bottom: none; }
+.table tbody tr:hover { background: #FEFDFB; }
+.table th:first-child, .table td:first-child { padding-left: 24px; }
+.reportCell { display: flex; align-items: center; gap: 12px; min-width: 160px; }
+.fileIcon { display: grid; place-items: center; flex-shrink: 0; height: 40px; width: 34px; border: 1px solid #DCD6C8; border-radius: 6px; background: #F6F3EC; color: #0B3D3A; font-size: 9px; letter-spacing: .04em; font-weight: 700; }
+.fileName { display: block; max-width: 240px; overflow-wrap: anywhere; font-size: 13px; font-weight: 600; line-height: 1.5; }
+.reportCell small, .email { display: block; font-size: 11px; color: #8A8577; margin-top: 4px; overflow-wrap: anywhere; }
+.patientName { font-size: 13px; font-weight: 500; }
+.status { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.status > span { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.ready { background: #E8F5E9; color: #1B5E20; }
+.pending { background: #FFF3E0; color: #E65100; }
+.failed { background: #FDE8E8; color: #C0392B; }
+.date { color: #8A8577; font-size: 12px; white-space: nowrap; }
+.actionHeading { text-align: right; }
+.actions { display: flex; justify-content: flex-end; align-items: center; gap: 7px; }
+.actions button { padding: 8px 9px; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.pdfButton { border: 1px solid transparent; color: #0D47A1; background: #E3F2FD; }
+.pdfButton:hover { background: #D6EAF8; }
+.explanationButton { border: 1px solid #DCD6C8; background: #E8F5E9; color: #1B5E20; }
+.explanationButton:hover { background: #D6ECD8; }
+.deleteButton { color: #C0392B; background: #FDE8E8; border: 1px solid transparent; }
+.deleteButton:hover { background: #FDE8E8; }
+.footer { color: #8A8577; text-align: center; font-size: 11px; margin-top: 22px; }
+.empty { padding: 64px 24px; text-align: center; color: #8A8577; font-size: 14px; }
+.empty h2 { color: #0B3D3A; font-size: 18px; margin-bottom: 8px; }
+.empty button { margin-top: 20px; }
+.notice, .error { padding: 13px 16px; margin-bottom: 18px; font-size: 13px; line-height: 1.6; border-radius: 8px; }
+.notice { display: flex; justify-content: space-between; gap: 12px; background: #E8F5E9; color: #1B5E20; }
+.notice button { font-size: 20px; line-height: 1; }
+.error { background: #FDE8E8; color: #C0392B; }
+.modal { margin: auto; width: calc(100% - 32px); max-width: 520px; max-height: 90dvh; overflow-y: auto; border: 1px solid #DCD6C8; border-radius: 16px; padding: 0; background: white; color: #1B1B18; box-shadow: 0 20px 80px #13281826; }
+.modal::backdrop { background: rgba(0, 0, 0, .5); }
+.modalHeader { display: flex; align-items: center; justify-content: space-between; padding: 22px 24px; border-bottom: 1px solid #DCD6C8; }
+.modalHeader h2 { font: 500 22px 'Fraunces', Georgia, serif; }
+.close { border: 1px solid #DCD6C8; border-radius: 8px; width: 34px; height: 34px; font-size: 22px; color: #8A8577; }
+.form { display: grid; gap: 18px; padding: 24px; font-size: 14px; line-height: 1.6; }
+.form label { display: grid; gap: 6px; font-size: 12px; font-weight: 600; color: #1B1B18; }
+.form input, .form select { border: 1px solid #DCD6C8; border-radius: 7px; padding: 10px 12px; background: white; font-size: 14px; font-weight: 400; width: 100%; min-width: 0; }
+.form small { font-weight: 400; color: #8A8577; font-size: 11px; }
+.fileUpload { background: #F6F3EC; border: 1px dashed #DCD6C8; border-radius: 10px; padding: 14px; }
+.modalActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 5px; }
+.danger { background: #C0392B; border: 1px solid #C0392B; color: white; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+@media (max-width: 1150px) and (min-width: 761px) { .actions { flex-wrap: wrap; min-width: 145px; } .table td, .table th { padding-inline: 12px; } }
+@media (max-width: 760px) {
+  .account { gap: 10px; } .account .primary, .logoutButton { padding: 10px 12px; font-size: 13px; }
+  .main { padding: 28px 16px; } .heading { align-items: flex-start; flex-direction: column; gap: 18px; } .subtitle { font-size: 13px; }
+  .toolbar { flex-wrap: wrap; padding: 16px; gap: 10px; } .search { flex: 1 1 100%; max-width: none; } .filter { margin-left: 0; flex: 1; } .filter select { width: 100%; } .listInfo { padding-inline: 16px; }
+  .table, .table tbody { display: block; } .table thead { display: none; } .table tr { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 12px; padding: 20px 16px; border-top: 1px solid #DCD6C8; }
+  .table td, .table td:first-child { display: block; padding: 0; border: 0; min-width: 0; }
+  .table td:first-child, .table td:nth-child(2), .table td:last-child { grid-column: 1 / -1; }
+  .table td:nth-child(2)::before, .table td:nth-child(4)::before { content: attr(data-label); display: block; color: #8A8577; font-size: 10px; margin-bottom: 4px; }
+  .table td:nth-child(3) { align-self: center; } .table td:nth-child(4) { text-align: right; }
+  .fileName { max-width: none; } .actions { justify-content: flex-start; flex-wrap: wrap; padding-top: 6px; } .actions button { padding: 9px 10px; }
+  .modalHeader, .form { padding: 20px; }
+}

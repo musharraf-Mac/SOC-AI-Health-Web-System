@@ -224,10 +224,10 @@ export default function PatientDashboard() {
   };
 
   // ============ View & Download PDF ============
-  const viewFile = async (fileId: string) => {
+  const viewFile = async (reportId: string) => {
     const tab = window.open("", "_blank");
     try {
-      const url = await reportFileUrl(fileId);
+      const url = await reportFileUrl(reportId);
       if (tab) tab.location.href = url;
       setTimeout(() => URL.revokeObjectURL(url), 120000);
     } catch {
@@ -236,9 +236,9 @@ export default function PatientDashboard() {
     }
   };
 
-  const downloadFile = async (fileId: string, filename: string) => {
+  const downloadFile = async (reportId: string, filename: string) => {
     try {
-      const url = await reportFileUrl(fileId);
+      const url = await reportFileUrl(reportId);
       const link = document.createElement("a");
       link.href = url;
       link.download = filename;
@@ -784,7 +784,7 @@ export default function PatientDashboard() {
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
-                      onClick={() => viewFile(report.fileId)}
+                      onClick={() => viewFile(report.id)}
                       style={{
                         padding: "6px 16px",
                         background: "#0B3D3A",
@@ -797,7 +797,7 @@ export default function PatientDashboard() {
                       👁️ View
                     </button>
                     <button
-                      onClick={() => downloadFile(report.fileId, `${report.reportType}.pdf`)}
+                      onClick={() => downloadFile(report.id, `${report.reportType}.pdf`)}
                       style={{
                         padding: "6px 16px",
                         background: "#FF8A5B",
