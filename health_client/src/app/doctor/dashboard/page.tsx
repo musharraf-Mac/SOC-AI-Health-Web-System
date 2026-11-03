@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
+import DoctorAvailability from "@/components/doctor-availability";
+import { formatAppointmentDate } from "@/lib/availability";
 
 // ============ Types ============
 interface DoctorInfo {
-  fullName: string;
+  fullname: string;
   email: string;
   role: string;
 }
@@ -58,6 +60,16 @@ export default function DoctorDashboard() {
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
+  const prescriptionRequest = useRef(0);
+  const loadPatients = useCallback((email: string) => apiFetch<Patient[]>("/api/doctor/patients", { cache: "no-store" })
+    .then(data => {
+      const own = data.filter(patient => patient.doctorEmail?.toLowerCase() === email.toLowerCase());
+      setPatients(own);
+      if (own.length !== data.length) setErrorMsg("The connected doctor service returned records for another doctor. They have been hidden. The backend needs updating.");
+    }).catch(() => { setPatients([]); setErrorMsg("Failed to load your appointments. Please try again."); })
+    .finally(() => setLoading(false)), []);
+  const fetchPatients = () => { if (doctor) { setLoading(true); setErrorMsg(""); setSelectedPatient(null); setPrescriptions([]); prescriptionRequest.current++; void loadPatients(doctor.email); } };
+
   // ============ Fetch Doctor Info ============
   useEffect(() => {
     const role = localStorage.getItem("role");
@@ -69,37 +81,26 @@ export default function DoctorDashboard() {
     apiFetch<DoctorInfo>("/api/auth/me", {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then(setDoctor)
+      .then(current => {
+        if (current.role !== "DOCTOR") { router.push("/login"); return; }
+        setDoctor(current); void loadPatients(current.email);
+      })
       .catch(() => {
         localStorage.clear();
         router.push("/login");
       });
 
-    // Fetch patients (booked patients)
-    fetchPatients();
-  }, [router]);
-
-  // ============ Fetch Patients ============
-  const fetchPatients = async () => {
-    try {
-      setLoading(true);
-      const data = await apiFetch<Patient[]>("/api/doctor/patients");
-      setPatients(data);
-    } catch (error) {
-      console.error("Error fetching patients:", error);
-      setErrorMsg("Failed to load patients.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [router, token, loadPatients]);
 
   // ============ Fetch Prescriptions for Selected Patient ============
   const fetchPrescriptions = async (email: string) => {
+    const request = ++prescriptionRequest.current;
+    setPrescriptions([]);
     try {
-      const data = await apiFetch<Prescription[]>(`/api/doctor/prescriptions/${email}`);
-      setPrescriptions(data);
-    } catch (error) {
-      console.error("Error fetching prescriptions:", error);
+      const data = await apiFetch<Prescription[]>(`/api/doctor/prescriptions/${encodeURIComponent(email)}`, { cache: "no-store" });
+      if (request === prescriptionRequest.current) setPrescriptions(data.filter(item => item.doctorEmail?.toLowerCase() === doctor?.email.toLowerCase() && item.patientEmail?.toLowerCase() === email.toLowerCase()));
+    } catch {
+      if (request === prescriptionRequest.current) { setPrescriptions([]); setErrorMsg("Unable to load prescriptions for this patient."); }
     }
   };
 
@@ -129,7 +130,8 @@ export default function DoctorDashboard() {
 
     try {
       const prescriptionData = {
-        doctorName: doctor?.fullName || "Doctor",
+        tokenNumber: selectedPatient.tokenNumber,
+        doctorName: doctor?.fullname || "Doctor",
         doctorEmail: doctor?.email || "",
         patientName: prescriptionForm.patientName,
         patientEmail: prescriptionForm.patientEmail,
@@ -138,7 +140,7 @@ export default function DoctorDashboard() {
         prescriptionText: prescriptionForm.prescriptionText,
       };
 
-      const result = await apiFetch<Prescription>("/api/doctor/prescriptions", {
+      await apiFetch<Prescription>("/api/doctor/prescriptions", {
         method: "POST",
         body: JSON.stringify(prescriptionData),
       });
@@ -191,7 +193,7 @@ export default function DoctorDashboard() {
         <div style={headerFlex}>
           <div>
             <p style={eyebrow}>Doctor Dashboard</p>
-            <h1 style={heading}>Welcome, Dr. {doctor.fullName}</h1>
+            <h1 style={heading}>Welcome, Dr. {doctor.fullname}</h1>
             <p style={subtext}>{doctor.email}</p>
           </div>
           <div style={headerButtons}>
@@ -228,15 +230,18 @@ export default function DoctorDashboard() {
           </div>
         </div>
 
+        {errorMsg && <p role="alert" style={errorStyle}>{errorMsg}</p>}
+        <DoctorAvailability />
+
         {/* ===== Main Content ===== */}
         <div style={grid}>
           {/* ===== Left: Patient List ===== */}
           <div style={card}>
-            <h2 style={cardTitle}>Today&apos;s Patients</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><h2 style={cardTitle}>My appointments</h2><button type="button" onClick={fetchPatients} disabled={loading} style={{ color: "#0B3D3A", cursor: "pointer" }}>Refresh</button></div>
             {loading ? (
-              <p style={{ color: "#8A8577", fontSize: 14 }}>Loading patients...</p>
+              <p style={{ color: "#000", fontSize: 14 }}>Loading patients...</p>
             ) : patients.length === 0 ? (
-              <p style={{ color: "#8A8577", fontSize: 14 }}>No patients yet.</p>
+              <p style={{ color: "#000", fontSize: 14 }}>No patients yet.</p>
             ) : (
               patients.map((p) => (
                 <div
@@ -252,10 +257,10 @@ export default function DoctorDashboard() {
                     <p style={{ margin: 0, fontWeight: 600, color: "#1B1B18" }}>
                       Token #{p.tokenNumber} — {p.patientName}
                     </p>
-                    <p style={{ margin: "2px 0 0", fontSize: 13, color: "#8A8577" }}>
-                      {p.bookingDate} at {p.bookingTime}
+                    <p style={{ margin: "2px 0 0", fontSize: 13, color: "#000" }}>
+                      {formatAppointmentDate(p.bookingDate)} at {p.bookingTime}
                     </p>
-                    <p style={{ margin: "2px 0 0", fontSize: 12, color: "#aaa" }}>
+                    <p style={{ margin: "2px 0 0", fontSize: 12, color: "#000" }}>
                       {p.patientEmail}
                     </p>
                   </div>
@@ -269,7 +274,7 @@ export default function DoctorDashboard() {
           <div style={card}>
             <h2 style={cardTitle}>Write Prescription</h2>
             {!selectedPatient ? (
-              <p style={{ color: "#8A8577", fontSize: 14 }}>
+              <p style={{ color: "#000", fontSize: 14 }}>
                 Select a patient from the list to write a prescription.
               </p>
             ) : (
@@ -283,7 +288,7 @@ export default function DoctorDashboard() {
                   <input
                     type="text"
                     value={prescriptionForm.patientName}
-                    onChange={(e) => setPrescriptionForm({ ...prescriptionForm, patientName: e.target.value })}
+                    readOnly
                     style={input}
                     required
                   />
@@ -294,7 +299,7 @@ export default function DoctorDashboard() {
                   <input
                     type="email"
                     value={prescriptionForm.patientEmail}
-                    onChange={(e) => setPrescriptionForm({ ...prescriptionForm, patientEmail: e.target.value })}
+                    readOnly
                     style={input}
                     required
                   />
@@ -335,7 +340,6 @@ export default function DoctorDashboard() {
                 </div>
 
                 {successMsg && <p style={successStyle}>{successMsg}</p>}
-                {errorMsg && <p style={errorStyle}>{errorMsg}</p>}
 
                 <button
                   type="submit"
@@ -359,7 +363,7 @@ export default function DoctorDashboard() {
                       <p style={{ margin: 0, fontWeight: 500, fontSize: 13, color: "#1B1B18" }}>
                         {p.disease}
                       </p>
-                      <p style={{ margin: "2px 0 0", fontSize: 12, color: "#8A8577" }}>
+                      <p style={{ margin: "2px 0 0", fontSize: 12, color: "#000" }}>
                         {p.prescriptionText.substring(0, 60)}...
                       </p>
                     </div>
@@ -382,7 +386,7 @@ export default function DoctorDashboard() {
 // ============ Helper Functions ============
 function statusBadge(status: string): React.CSSProperties {
   const colors: Record<string, string> = {
-    BOOKED: "#8A8577",
+    BOOKED: "#000",
     CONFIRMED: "#0B3D3A",
     ARRIVED: "#FF8A5B",
     COMPLETED: "#1E7E34",
@@ -394,7 +398,7 @@ function statusBadge(status: string): React.CSSProperties {
     letterSpacing: "0.05em",
     textTransform: "uppercase",
     color: "#FFF",
-    background: colors[status] || "#8A8577",
+    background: colors[status] || "#000",
     padding: "4px 10px",
     borderRadius: 4,
   };
@@ -404,6 +408,7 @@ function statusBadge(status: string): React.CSSProperties {
 const page: React.CSSProperties = {
   minHeight: "100vh",
   background: "#F6F3EC",
+  color: "#000",
   padding: "40px 32px",
   fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 };
@@ -412,6 +417,8 @@ const wrap: React.CSSProperties = { maxWidth: 960, margin: "0 auto" };
 
 const headerFlex: React.CSSProperties = {
   display: "flex",
+  flexWrap: "wrap",
+  gap: 16,
   justifyContent: "space-between",
   alignItems: "center",
   marginBottom: 24,
@@ -469,11 +476,11 @@ const heading: React.CSSProperties = {
   margin: "8px 0 4px",
 };
 
-const subtext: React.CSSProperties = { color: "#8A8577", fontSize: 14, margin: 0 };
+const subtext: React.CSSProperties = { color: "#000", fontSize: 14, margin: 0 };
 
 const grid: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "1fr 1.2fr",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))",
   gap: 24,
 };
 

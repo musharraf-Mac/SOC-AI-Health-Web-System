@@ -1,11 +1,11 @@
 "use client";
+import { formatAppointmentDate } from "@/lib/availability";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch, reportFileUrl } from "@/lib/api";
 import ExplanationDialog from "@/components/explanation-dialog";
 
-const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8087";
 // ============ Types ============
 interface UserInfo {
   fullname: string;
@@ -18,8 +18,11 @@ interface Doctor {
   name: string;
   email: string;
   specialization: string;
+  availableSlots: { date: string; time: string }[];
   availableDates: string[];
   availableTimes: string[];
+  windowStart: string;
+  windowEnd: string;
 }
 
 interface Booking {
@@ -64,14 +67,6 @@ interface Prescription {
   updatedAt: string;
 }
 
-interface Medication {
-  name: string;
-  dosage: string;
-  frequency: string;
-  duration: string;
-  instructions: string;
-}
-
 export default function PatientDashboard() {
   const router = useRouter();
   const [user, setUser] = useState<UserInfo | null>(null);
@@ -108,61 +103,35 @@ export default function PatientDashboard() {
         localStorage.clear();
         router.push("/login");
       });
-  }, [router]);
+  }, [router, token]);
 
   // ============ Fetch Data ============
 
-  // Fetch Doctors from doc_booking service
-  const fetchDoctors = async () => {
-    try {
-      const data = await apiFetch<Doctor[]>("/api/doc_booking/doctors");
+  const fetchDoctors = useCallback(() => apiFetch<Doctor[]>("/api/doc_booking/doctors", { cache: "no-store" })
+    .then(data => {
+      if (data.some(item => !Array.isArray(item.availableSlots) || !item.windowStart)) throw new Error("The appointment service needs updating before schedules can be booked.");
       setDoctors(data);
-    } catch (error) {
-      console.error("Error fetching doctors:", error);
-      setMessage("Could not load doctors.");
-    }
-  };
+      setSelectedDoctor(current => current ? data.find(item => item.email === current.email) || null : null);
+    }).catch(error => { setDoctors([]); setSelectedDoctor(null); setMessage(error instanceof Error ? error.message : "Could not load doctors. Please refresh availability."); }), []);
 
-  // Fetch Bookings from doc_booking service
-  const fetchBookings = async () => {
-    try {
-      const data = await apiFetch<Booking[]>(`/api/doc_booking/patient/${patientEmail}/bookings`);
-      setBookings(data);
-    } catch (error) {
-      console.error("Error fetching bookings:", error);
-    }
-  };
+  const fetchBookings = useCallback(() => apiFetch<Booking[]>(`/api/doc_booking/patient/${encodeURIComponent(patientEmail)}/bookings`, { cache: "no-store" })
+    .then(data => setBookings(data.filter(item => item.patientEmail?.toLowerCase() === patientEmail.toLowerCase())))
+    .catch(() => { setBookings([]); setMessage("Could not load appointments. Please try again."); }), [patientEmail]);
 
-  // Fetch Lab Reports from lab_rep service
-  const fetchLabReports = async () => {
-    try {
-      const data = await apiFetch<LabReport[]>(`/api/reports/patient/${patientEmail}`);
-      setLabReports(data);
-    } catch (error) {
-      console.error("Error fetching lab reports:", error);
-    }
-  };
+  const fetchLabReports = useCallback(() => apiFetch<LabReport[]>(`/api/reports/patient/${encodeURIComponent(patientEmail)}`, { cache: "no-store" })
+    .then(setLabReports).catch(() => setMessage("Could not load lab reports.")), [patientEmail]);
 
-  // Fetch Prescriptions from doctor service
-  const fetchPrescriptions = async () => {
-    try {
-      const data = await apiFetch<Prescription[]>(`/api/doctor/prescriptions/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setPrescriptions(data);
-    } catch (error) {
-      console.error("Error fetching prescriptions:", error);
-    }
-  };
+  const fetchPrescriptions = useCallback(() => apiFetch<Prescription[]>("/api/doctor/prescriptions/me", { cache: "no-store" })
+    .then(setPrescriptions).catch(() => setMessage("Could not load prescriptions.")), []);
 
   useEffect(() => {
     if (patientEmail) {
-      fetchDoctors();
-      fetchBookings();
-      fetchLabReports();
-      fetchPrescriptions();
+      void fetchDoctors();
+      void fetchBookings();
+      void fetchLabReports();
+      void fetchPrescriptions();
     }
-  }, [patientEmail]);
+  }, [patientEmail, fetchDoctors, fetchBookings, fetchLabReports, fetchPrescriptions]);
 
   // ============ Logout Handler ============
   const handleLogout = async () => {
@@ -209,6 +178,7 @@ export default function PatientDashboard() {
       if (booking.tokenNumber) {
         setMessage(`✅ Booking confirmed! Token: ${booking.tokenNumber}`);
         fetchBookings();
+        fetchDoctors();
         setSelectedDoctor(null);
         setBookingDate("");
         setBookingTime("");
@@ -220,7 +190,10 @@ export default function PatientDashboard() {
       }
     } catch (error) {
       console.error("Booking error:", error);
-      setMessage("❌ Booking failed. Please try again.");
+      setMessage(error instanceof Error ? `❌ ${error.message}` : "❌ Booking failed. Please try again.");
+      fetchDoctors();
+      setBookingDate("");
+      setBookingTime("");
     } finally {
       setLoading(false);
     }
@@ -250,25 +223,17 @@ export default function PatientDashboard() {
     } catch { setMessage("Unable to download report. Please try again."); }
   };
 
-  // Delete Prescription Handler
-  const handleDeletePrescription = async (prescriptionId: string) => {
-  if (!confirm("Are you sure you want to delete this prescription?")) {
-    return;
-  }
-
-  try {
-    await apiFetch(`/api/doc_booking/delbooking/${prescriptionId}`, {
-      method: "DELETE",
-    });
-    
-    // Refresh prescriptions list
-    fetchPrescriptions();
-    setMessage("Prescription deleted successfully");
-  } catch (error) {
-    console.error("Error deleting prescription:", error);
-    setMessage("Failed to delete prescription");
-  }
-};
+  const handleDeleteBooking = async (bookingId: string) => {
+    if (!confirm("Are you sure you want to cancel this appointment?")) return;
+    try {
+      await apiFetch(`/api/doc_booking/delbooking/${encodeURIComponent(bookingId)}`, { method: "DELETE" });
+      await fetchBookings();
+      await fetchDoctors();
+      setMessage("✅ Appointment cancelled.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to cancel appointment.");
+    }
+  };
 
   // ============ Loading State ============
   if (!user) return <div style={{ padding: 40, textAlign: "center" }}>Loading…</div>;
@@ -279,6 +244,7 @@ export default function PatientDashboard() {
       style={{
         minHeight: "100vh",
         background: "#F6F3EC",
+        color: "#000",
         padding: "40px 32px",
         fontFamily: "'Inter', sans-serif",
       }}
@@ -316,7 +282,7 @@ export default function PatientDashboard() {
             >
               Welcome, {user.fullname}
             </h1>
-            <p style={{ color: "#8A8577", fontSize: 14, margin: 0 }}>
+            <p style={{ color: "#000", fontSize: 14, margin: 0 }}>
               {user.email}
             </p>
           </div>
@@ -412,7 +378,11 @@ export default function PatientDashboard() {
           ].map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
+              onClick={() => {
+                setActiveTab(tab.key as typeof activeTab);
+                if (tab.key === "book") { fetchDoctors(); setBookingDate(""); setBookingTime(""); }
+                if (tab.key === "appointments") fetchBookings();
+              }}
               style={{
                 padding: "8px 20px",
                 background: activeTab === tab.key ? "#0B3D3A" : "#FFF",
@@ -454,11 +424,14 @@ export default function PatientDashboard() {
             <h3 style={{ margin: "0 0 16px 0", color: "#0B3D3A" }}>
               Book a Doctor Appointment
             </h3>
+            <p style={{ color: "#000", fontSize: 13, marginBottom: 12 }}>Choose an available appointment in the next two weeks, published by a registered doctor. Dates include the weekday; all times are in Sri Lanka time (Asia/Colombo).</p>
+            <button type="button" onClick={() => { fetchDoctors(); setBookingDate(""); setBookingTime(""); }} style={{ color: "#0B3D3A", marginBottom: 16, cursor: "pointer" }}>Refresh availability</button>
+            {!doctors.length && <p style={{ color: "#000", marginBottom: 16 }}>No doctors have available appointments yet. Please check again later.</p>}
 
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
                 gap: 12,
               }}
             >
@@ -494,14 +467,14 @@ export default function PatientDashboard() {
                   background: "#FFF",
                   color: "#1B1B18",
                 }}
-                onChange={(e) => setBookingDate(e.target.value)}
+                onChange={(e) => { setBookingDate(e.target.value); setBookingTime(""); }}
                 value={bookingDate}
                 disabled={!selectedDoctor}
               >
                 <option value="">-- Select Date --</option>
                 {selectedDoctor?.availableDates.map((date) => (
                   <option key={date} value={date}>
-                    {date}
+                    {formatAppointmentDate(date)}
                   </option>
                 ))}
               </select>
@@ -519,7 +492,7 @@ export default function PatientDashboard() {
                 disabled={!bookingDate}
               >
                 <option value="">-- Select Time --</option>
-                {selectedDoctor?.availableTimes.map((time) => (
+                {selectedDoctor?.availableSlots?.filter(slot => slot.date === bookingDate).map(({ time }) => (
                   <option key={time} value={time}>
                     {time}
                   </option>
@@ -529,7 +502,7 @@ export default function PatientDashboard() {
 
             <button
               onClick={handleBooking}
-              disabled={loading}
+              disabled={loading || !selectedDoctor || !bookingDate || !bookingTime}
               style={{
                 marginTop: 16,
                 padding: "10px 24px",
@@ -571,11 +544,11 @@ export default function PatientDashboard() {
               >
                 <p style={{ margin: 0, fontSize: 13, color: "#4A463E" }}>
                   <strong>Available Dates:</strong>{" "}
-                  {selectedDoctor.availableDates.join(", ")}
+                  {selectedDoctor.availableDates.map(formatAppointmentDate).join(", ")}
                 </p>
                 <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "#4A463E" }}>
-                  <strong>Available Times:</strong>{" "}
-                  {selectedDoctor.availableTimes.join(", ")}
+                  <strong>Times for selected date:</strong>{" "}
+                  {bookingDate ? selectedDoctor.availableSlots.filter(slot => slot.date === bookingDate).map(slot => slot.time).join(", ") : "Select a date above"}
                 </p>
               </div>
             )}
@@ -596,8 +569,9 @@ export default function PatientDashboard() {
             <h3 style={{ margin: "0 0 16px 0", color: "#0B3D3A" }}>
               My Appointments
             </h3>
+            {message && <p role="status" style={{ color: "#000", marginBottom: 12 }}>{message}</p>}
             {bookings.length === 0 ? (
-              <p style={{ color: "#8A8577" }}>No appointments yet. Book one above!</p>
+              <p style={{ color: "#000" }}>No appointments yet. Book one above!</p>
             ) : (
               bookings.map((b) => (
                 <div
@@ -612,8 +586,8 @@ export default function PatientDashboard() {
                 >
                   <div>
                     <strong>{b.doctorName}</strong>
-                    <p style={{ margin: 0, fontSize: 13, color: "#8A8577" }}>
-                      {b.bookingDate} at {b.bookingTime}
+                    <p style={{ margin: 0, fontSize: 13, color: "#000" }}>
+                      {formatAppointmentDate(b.bookingDate)} at {b.bookingTime}
                     </p>
                   </div>
                   <div style={{ textAlign: "right" }}>
@@ -636,7 +610,7 @@ export default function PatientDashboard() {
                       </span>
                       {/* Delete button for each booking */}
                       <button
-                onClick={() => handleDeletePrescription(b.id)}
+                onClick={() => handleDeleteBooking(b.id)}
                 style={{
                   padding: "4px 10px",
                   borderRadius: 6,
@@ -653,13 +627,13 @@ export default function PatientDashboard() {
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = "#FDE8E8";
                 }}
-                title="Delete Prescription"
+                title="Cancel appointment"
               >
                 🗑️
               </button>
                       </div>
                     </div>
-                    <p style={{ margin: "4px 0 0 0", fontSize: 11, color: "#8A8577" }}>
+                    <p style={{ margin: "4px 0 0 0", fontSize: 11, color: "#000" }}>
                       {new Date(b.createdAt).toLocaleDateString()}
                     </p>
                   </div>
@@ -684,7 +658,7 @@ export default function PatientDashboard() {
               📄 My Prescriptions
             </h3>
             {prescriptions.length === 0 ? (
-              <p style={{ color: "#8A8577" }}>No prescriptions available yet.</p>
+              <p style={{ color: "#000" }}>No prescriptions available yet.</p>
             ) : (
               prescriptions.map((p) => (
                 <div
@@ -699,7 +673,7 @@ export default function PatientDashboard() {
                       <strong style={{ fontSize: 15, color: "#0B3D3A" }}>
                         Dr. {p.doctorName}
                       </strong>
-                      <p style={{ margin: "2px 0 0", fontSize: 13, color: "#8A8577" }}>
+                      <p style={{ margin: "2px 0 0", fontSize: 13, color: "#000" }}>
                         {p.doctorEmail}
                       </p>
                     </div>
@@ -728,7 +702,7 @@ export default function PatientDashboard() {
                     </p>
                   </div>
 
-                  <div style={{ marginTop: 8, display: "flex", gap: 16, fontSize: 12, color: "#8A8577" }}>
+                  <div style={{ marginTop: 8, display: "flex", gap: 16, fontSize: 12, color: "#000" }}>
                     <span>📅 Created: {new Date(p.createdAt).toLocaleDateString()}</span>
                     {p.updatedAt && (
                       <span>🔄 Updated: {new Date(p.updatedAt).toLocaleDateString()}</span>
@@ -755,7 +729,7 @@ export default function PatientDashboard() {
               📊 My Lab Reports
             </h3>
             {labReports.length === 0 ? (
-              <p style={{ color: "#8A8577" }}>No lab reports available yet.</p>
+              <p style={{ color: "#000" }}>No lab reports available yet.</p>
             ) : (
               labReports.map((report) => (
                 <div
@@ -772,7 +746,7 @@ export default function PatientDashboard() {
                 >
                   <div>
                     <strong>{report.reportType}</strong>
-                    <p style={{ margin: 0, fontSize: 12, color: "#8A8577" }}>
+                    <p style={{ margin: 0, fontSize: 12, color: "#000" }}>
                       Uploaded: {new Date(report.uploadedAt).toLocaleDateString()}
                     </p>
                     <span

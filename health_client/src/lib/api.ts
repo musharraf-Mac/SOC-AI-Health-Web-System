@@ -1,3 +1,7 @@
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) { super(message); this.name = "ApiError"; }
+}
+
 export async function apiFetch<T = Record<string, string>>(
   path: string,
   options: RequestInit = {},
@@ -21,7 +25,7 @@ export async function apiFetch<T = Record<string, string>>(
 
   if (!response.ok) {
     const detail = await response.json().catch(() => ({}));
-    throw new Error(detail.error || detail.message || `Request failed: ${response.status}`);
+    throw new ApiError(detail.error || detail.message || `Request failed: ${response.status}`, response.status);
   }
 
   return response.json() as Promise<T>;
