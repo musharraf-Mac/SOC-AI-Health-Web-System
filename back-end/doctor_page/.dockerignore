@@ -29,8 +29,7 @@ Dockerfile
 docker-compose.yml
 .dockerignore
 
-# Environment (don't ignore .env if you want to include it)
-# .env
+# Environment and credentials must be provided at runtime
 
 # Node (if any)
 node_modules/
@@ -40,3 +39,12 @@ npm-debug.log
 tmp/
 temp/
 *.tmp
+# Never send credentials to the Docker builder
+.env
+.env.*
+*.pem
+*.key
+*.p12
+gcp-adc.json
+application_default_credentials.json
+*service-account*.json
