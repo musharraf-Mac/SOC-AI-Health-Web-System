@@ -16,27 +16,19 @@ public class MongoConfig {
     @Value("${MONGODB_URI}")
     private String mongoUri;
 
+    @Value("${DATABASE:}")
+    private String database;
+
     @Bean
     public MongoClient mongoClient() {
-        System.out.println("✅✅✅ Connecting to MongoDB Atlas: " + mongoUri);
         return MongoClients.create(mongoUri);
     }
 
     @Bean
     public MongoTemplate mongoTemplate() {
-        return new MongoTemplate(mongoClient(), getDatabaseName());
+        String selectedDatabase = database;
+        if (selectedDatabase.isBlank()) selectedDatabase = new com.mongodb.ConnectionString(mongoUri).getDatabase();
+        return new MongoTemplate(mongoClient(), selectedDatabase == null || selectedDatabase.isBlank() ? "soc_health_db" : selectedDatabase);
     }
 
-    private String getDatabaseName() {
-        // Extract database name from URI
-        if (mongoUri.contains("/")) {
-            String[] parts = mongoUri.split("/");
-            String lastPart = parts[parts.length - 1];
-            if (lastPart.contains("?")) {
-                return lastPart.split("\\?")[0];
-            }
-            return lastPart;
-        }
-        return "soc_health_db";
-    }
 }
