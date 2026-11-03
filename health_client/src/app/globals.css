@@ -105,14 +105,22 @@ textarea::placeholder {
   opacity: 1 !important;
 }
 
-/* 3. Keep disabled text light */
-[disabled],
-[disabled] *,
+/* Keep disabled forms readable; never multiply opacity across descendants. */
+fieldset:disabled {
+  opacity: 1 !important;
+}
+
 input:disabled,
 select:disabled,
+textarea:disabled {
+  color: #1B1B18 !important;
+  background: #F6F3EC;
+  opacity: 1 !important;
+}
+
 button:disabled {
-  color: #8A8577 !important;
-  opacity: 0.6 !important;
+  cursor: not-allowed;
+  opacity: 0.65 !important;
 }
 
 /* 4. Keep links with their own styling */
