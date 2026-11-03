@@ -12,6 +12,27 @@ public class Doctor {
     private String name;
     private String email;
     private String specialization;
+    private List<AvailabilityRule> availabilityRules;
+    private List<String> excludedDates;
+    // Preserve existing manually published slots separately from generated recurring slots.
+    private List<AvailabilitySlot> oneOffSlots;
+    @org.springframework.data.annotation.Transient
+    private String windowStart;
+    @org.springframework.data.annotation.Transient
+    private String windowEnd;
+    public List<AvailabilityRule> getAvailabilityRules() { return availabilityRules; }
+    public void setAvailabilityRules(List<AvailabilityRule> rules) { availabilityRules = rules; }
+    public List<String> getExcludedDates() { return excludedDates; }
+    public void setExcludedDates(List<String> dates) { excludedDates = dates; }
+    public List<AvailabilitySlot> getOneOffSlots() { return oneOffSlots; }
+    public void setOneOffSlots(List<AvailabilitySlot> slots) { oneOffSlots = slots; }
+    public String getWindowStart() { return windowStart; }
+    public void setWindowStart(String date) { windowStart = date; }
+    public String getWindowEnd() { return windowEnd; }
+    public void setWindowEnd(String date) { windowEnd = date; }
+    private List<AvailabilitySlot> availableSlots;
+    public List<AvailabilitySlot> getAvailableSlots() { return availableSlots; }
+    public void setAvailableSlots(List<AvailabilitySlot> slots) { availableSlots = slots; }
     private List<String> availableDates;
     private List<String> availableTimes;
 
